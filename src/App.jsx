@@ -33,33 +33,39 @@ const HOUSE_OPTIONS = {
     { id: 'strip', name: 'Туузан суурь', price: 15000000, color: '#64748b', type: 'solid', unit: 'м3', desc: 'Бат бөх, найдвартай' }, 
     { id: 'pile', name: 'Баганан суурь', price: 8500000, color: '#94a3b8', type: 'dots', unit: 'м3', desc: 'Зардал бага, хөнгөн' },
     { id: 'slab', name: 'Хавтан суурь', price: 18000000, color: '#475569', type: 'solid', unit: 'м3', desc: 'Намгархаг хөрсөнд' }, 
+    { id: 'basement', name: 'Зоорьтой суурь', price: 35000000, color: '#334155', type: 'solid', unit: 'м3', desc: 'Агуулах, гаражтай' },
   ],
   wall: [
     { id: 'block_light', name: 'Хөнгөн блок', price: 25000000, color: '#e2e8f0', pattern: 'block', unit: 'м3', desc: 'Дулаан алдагдал бага' }, 
     { id: 'brick_red', name: 'Улаан тоосго', price: 35000000, color: '#ef4444', pattern: 'brick', unit: 'м3', desc: 'Уламжлалт, бат бөх' },
-    { id: 'brick_black', name: 'Хар тоосго', price: 38000000, color: '#334155', pattern: 'brick', unit: 'м3', desc: 'Модерн загвар' },
+    { id: 'brick_black', name: 'Хар тоосго', price: 38000000, color: '#1e293b', pattern: 'brick', unit: 'м3', desc: 'Модерн загвар' },
     { id: 'timber', name: 'Дүнзэн (Мод)', price: 45000000, color: '#d97706', pattern: 'wood', unit: 'м3', desc: 'Эко, дулаан' },
+    { id: 'concrete', name: 'Цутгамал бетон', price: 42000000, color: '#94a3b8', pattern: 'plain', unit: 'м3', desc: 'Маш бат бөх' },
   ],
   roof: [
     { id: 'gable_red', name: 'Төмөр (Улаан)', price: 45000, color: '#b91c1c', type: 'gable', unit: 'м2', desc: 'Энгийн хийц' }, 
     { id: 'gable_black', name: 'Битамон (Хар)', price: 65000, color: '#1e293b', type: 'gable', unit: 'м2', desc: 'Дуу чимээ бага' },
     { id: 'hip_green', name: 'Майхан (Ногоон)', price: 55000, color: '#15803d', type: 'hip', unit: 'м2', desc: 'Салхинд тэсвэртэй' },
     { id: 'flat', name: 'Хавтгай', price: 50000, color: '#475569', type: 'flat', unit: 'м2', desc: 'Террас хийх боломжтой' },
+    { id: 'shed', name: 'Нэг налуу (Хар)', price: 40000, color: '#0f172a', type: 'shed', unit: 'м2', desc: 'Модерн, энгийн' },
   ],
   window: [
     { id: 'standard', name: 'Стандарт', price: 450000, type: 'std', unit: 'ш', desc: '2 давхар шил' }, 
-    { id: 'triple', name: '3 давхар шил', price: 650000, type: 'std', unit: 'ш', desc: 'Дулаан' },
+    { id: 'triple', name: '3 давхар шил', price: 650000, type: 'std', unit: 'ш', desc: 'Дулаан алдагдал бага' },
     { id: 'panoramic', name: 'Панорама', price: 950000, type: 'pano', unit: 'ш', desc: 'Шалнаас тааз хүртэл' },
+    { id: 'arched', name: 'Тал дугуй', price: 850000, type: 'arch', unit: 'ш', desc: 'Сонгодог загвар' },
   ],
   door: [
-    { id: 'metal', name: 'Бүргэд', price: 650000, color: '#7f1d1d', unit: 'ш', desc: 'ОХУ стандарт' }, 
-    { id: 'smart', name: 'Ухаалаг (Хар)', price: 1200000, color: '#171717', unit: 'ш', desc: 'Код, хурууны хээ' },
-    { id: 'white', name: 'Цагаан', price: 450000, color: '#f1f5f9', unit: 'ш', desc: 'Модерн' },
+    { id: 'metal', name: 'Бүргэд', price: 650000, color: '#7f1d1d', type: 'std', unit: 'ш', desc: 'ОХУ стандарт' }, 
+    { id: 'smart', name: 'Ухаалаг (Хар)', price: 1200000, color: '#171717', type: 'std', unit: 'ш', desc: 'Код, хурууны хээ' },
+    { id: 'white', name: 'Цагаан', price: 450000, color: '#f1f5f9', type: 'std', unit: 'ш', desc: 'Модерн' },
+    { id: 'glass', name: 'Шилэн', price: 1800000, color: '#94a3b8', type: 'glass', unit: 'ш', desc: 'Оффис, дэлгүүр' },
   ],
   facade: [
-    { id: 'none', name: 'Өнгөлгөөгүй', price: 0, color: 'transparent', unit: 'м2', desc: 'Үндсэн хана' },
+    { id: 'none', name: 'Өнгөлгөөгүй', price: 0, color: 'transparent', pattern: 'none', unit: 'м2', desc: 'Үндсэн хана' },
     { id: 'stucco', name: 'Чулуун замаск', price: 25000, color: '#f5f5f4', pattern: 'noise', unit: 'м2', desc: 'Гоёлын шавардлага' },
     { id: 'siding', name: 'Сайдинг', price: 45000, color: '#cbd5e1', pattern: 'lines', unit: 'м2', desc: 'Металл өнгөлгөө' },
+    { id: 'brick_veneer', name: 'Өнгөлгөөний тоосго', price: 65000, color: '#b91c1c', pattern: 'brick', unit: 'м2', desc: 'Тансаг харагдац' },
   ]
 };
 
@@ -83,7 +89,8 @@ const INITIAL_SUPPLIERS = {
     { id: 1, sellerId: 's1', name: 'Төмөр Трейд - МАК Цемент', price: 24000, unit: 'шуудай', stock: 500, delivery: 'paid', image: 'https://placehold.co/150x150/e2e8f0/64748b?text=Cement', tags: ['M300', 'Портланд'] },
     { id: 2, sellerId: 's2', name: 'Барилга МН - Хөтөл Цемент', price: 23500, unit: 'шуудай', stock: 120, delivery: 'free', image: 'https://placehold.co/150x150/e2e8f0/64748b?text=Cement', tags: ['M200'] },
   ],
-  brick: [{ id: 4, sellerId: 's3', name: 'Налайх Тоосго', price: 650, unit: 'ш', stock: 10000, delivery: 'paid', image: 'https://placehold.co/150x150/ef4444/fee2e2?text=Brick', tags: ['Улаан'] }],
+  brick: [{ id: 4, sellerId: 's3', name: 'Налайх Тоосго', price: 650, unit: 'ш', stock: 10000, delivery: 'paid', image: 'https://placehold.co/150x150/ef4444/fee2e2?text=Brick', tags: ['Улаан'] },
+          { id: 202, sellerId: 's2', name: 'Хөнгөн Блок', price: 4000, unit: 'ш', stock: 2000, delivery: 'paid', image: 'https://placehold.co/150x150/d1d5db/64748b?text=Block', tags: ['60x30x20'] }],
   pipes: [{ id: 50, sellerId: 's1', name: 'PPR Хоолой Ф20', price: 2500, unit: 'м', stock: 1000, delivery: 'paid', image: 'https://placehold.co/150x150/bfdbfe/1d4ed8?text=Pipe', tags: ['PPR', 'Ф20'] }],
   wire: [{ id: 60, sellerId: 's4', name: 'Зэс утас 2.5мм', price: 1200, unit: 'м', stock: 5000, delivery: 'paid', image: 'https://placehold.co/150x150/fef08a/a16207?text=Wire', tags: ['2.5мм', 'Орос'] }],
   faucet: [{ id: 70, sellerId: 's4', name: 'Ванны холигч', price: 85000, unit: 'ш', stock: 20, delivery: 'free', image: 'https://placehold.co/150x150/94a3b8/1e293b?text=Faucet', tags: ['Ган', 'Матт'] }],
@@ -176,18 +183,6 @@ const InputField = ({ label, value, onChange, unit, type = "number", step = "any
   </div>
 );
 
-const ShapeIcon = ({ type, active }) => {
-    const color = active ? "#f97316" : "currentColor";
-    const fill = active ? "#ffedd5" : "none";
-    switch (type) {
-        case 'rect': return <svg width="24" height="24" viewBox="0 0 24 24" fill={fill} stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="5" width="18" height="14" rx="2" /></svg>;
-        case 'l-shape': return <svg width="24" height="24" viewBox="0 0 24 24" fill={fill} stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h8v8h8v8H4z" /></svg>;
-        case 't-shape': return <svg width="24" height="24" viewBox="0 0 24 24" fill={fill} stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16v6h-5v10h-6V10H4z" /></svg>;
-        case 'u-shape': return <svg width="24" height="24" viewBox="0 0 24 24" fill={fill} stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4v16h16V4h-5v10H9V4z" /></svg>;
-        default: return null;
-    }
-};
-
 // --- 3. CORE COMPONENTS ---
 
 const Header = ({ cartCount, onNavigate, onOpenCart, darkMode, toggleDarkMode, userRole, setUserRole }) => (
@@ -264,7 +259,6 @@ const Footer = () => (
     </footer>
 );
 
-// --- SELLER LOGIN COMPONENT ---
 const SellerLogin = ({ onLogin }) => {
     const [phone, setPhone] = useState('');
     const [password, setPassword] = useState('');
@@ -418,7 +412,6 @@ const SellerLogin = ({ onLogin }) => {
     );
 };
 
-// V. SELLER DASHBOARD (MOBILE FIRST)
 const SellerDashboard = ({ allProducts, setAllProducts }) => {
     const currentSellerId = 'v1';
     const myProducts = allProducts.filter(p => p.vendorId === currentSellerId);
@@ -432,7 +425,7 @@ const SellerDashboard = ({ allProducts, setAllProducts }) => {
         const product = {
             id: Date.now(),
             vendorId: currentSellerId,
-            category: 'structure', 
+            category: 'structure',
             ...newProduct,
             price: parseFloat(newProduct.price),
             stock: parseInt(newProduct.stock) || 0,
@@ -440,7 +433,6 @@ const SellerDashboard = ({ allProducts, setAllProducts }) => {
         };
         
         setAllProducts([product, ...allProducts]);
-        
         setIsAdding(false);
         setNewProduct({ name: '', price: '', unit: 'ш', color: '', size: '', stock: '', type: 'brick' });
         alert("Бараа амжилттай нэмэгдлээ! Хэрэглэгчийн хэсэгт харагдах болно.");
@@ -586,11 +578,7 @@ const SellerDashboard = ({ allProducts, setAllProducts }) => {
     );
 };
 
-// ==========================================
-// 4. VISUAL BUILDER COMPONENTS
-// ==========================================
-
-const HouseVisualizer = ({ config, floors }) => {
+const HouseVisualizer = ({ config, floors, shape }) => {
     const wallOpt = HOUSE_OPTIONS.wall.find(w => w.id === config.wall) || HOUSE_OPTIONS.wall[0];
     const roofOpt = HOUSE_OPTIONS.roof.find(r => r.id === config.roof) || HOUSE_OPTIONS.roof[0];
     const foundationOpt = HOUSE_OPTIONS.foundation.find(f => f.id === config.foundation) || HOUSE_OPTIONS.foundation[0];
@@ -603,65 +591,19 @@ const HouseVisualizer = ({ config, floors }) => {
     const foundColor = foundationOpt.color;
     const doorColor = doorOpt.color;
 
-    const renderPatterns = () => (
-        <defs>
-            <pattern id="brickPattern" x="0" y="0" width="20" height="10" patternUnits="userSpaceOnUse"><rect width="20" height="10" fill={wallColor} /><path d="M0 10h20M10 0v10" stroke="rgba(0,0,0,0.1)" strokeWidth="1" /></pattern>
-            <pattern id="blockPattern" x="0" y="0" width="30" height="15" patternUnits="userSpaceOnUse"><rect width="30" height="15" fill={wallColor} /><path d="M0 15h30M15 0v15" stroke="rgba(0,0,0,0.1)" strokeWidth="1" /></pattern>
-            <pattern id="woodPattern" x="0" y="0" width="40" height="10" patternUnits="userSpaceOnUse"><rect width="40" height="10" fill={wallColor} /><path d="M0 10h40" stroke="rgba(0,0,0,0.2)" strokeWidth="1" /></pattern>
-            <pattern id="sidingPattern" x="0" y="0" width="40" height="10" patternUnits="userSpaceOnUse"><rect width="40" height="10" fill={wallColor} /><path d="M0 10h40" stroke="rgba(0,0,0,0.1)" strokeWidth="1" /></pattern>
-            <linearGradient id="windowGrad" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stopColor="#bae6fd" /><stop offset="100%" stopColor="#7dd3fc" /></linearGradient>
-            <linearGradient id="nightWindow" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stopColor="#fef08a" /><stop offset="100%" stopColor="#eab308" /></linearGradient>
-        </defs>
-    );
-
-    const getWallFill = () => {
-        if (facadeOpt.id === 'siding') return 'url(#sidingPattern)';
-        if (wallOpt.pattern === 'brick' && facadeOpt.id === 'none') return 'url(#brickPattern)';
-        if (wallOpt.pattern === 'block' && facadeOpt.id === 'none') return 'url(#blockPattern)';
-        if (wallOpt.pattern === 'wood' && facadeOpt.id === 'none') return 'url(#woodPattern)';
-        return wallColor;
-    };
-
-    const WindowSVG = ({ x, y, w, h }) => {
-        const isPano = windowOpt.type === 'pano';
-        return (
-            <g transform={`translate(${x}, ${y})`}>
-                <rect width={w} height={h} fill="url(#windowGrad)" className="dark:fill-[url(#nightWindow)]" stroke="white" strokeWidth="2" />
-                {!isPano && (<><line x1={w/2} y1="0" x2={w/2} y2={h} stroke="white" strokeWidth="2" /><line x1="0" y1={h/2} x2={w} y2={h/2} stroke="white" strokeWidth="2" /></>)}
-                {isPano && <line x1="0" y1={h/2} x2={w} y2={h/2} stroke="white" strokeWidth="2" />}
-            </g>
-        );
-    };
-
-    const houseHeightClass = floors === 2 ? 'h-64' : 'h-40';
-
     return (
         <div className="w-full h-80 flex items-end justify-center">
             <svg width="300" height="300" viewBox="0 0 300 300" className="drop-shadow-2xl">
-                {renderPatterns()}
+                 <defs>
+                    <linearGradient id="windowGrad" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stopColor="#bae6fd" /><stop offset="100%" stopColor="#7dd3fc" /></linearGradient>
+                </defs>
                 <g transform="translate(50, 50)">
-                    {/* ROOF */}
                     {roofOpt.type === 'gable' && <path d="M-20 100 L100 20 L220 100 Z" fill={roofColor} />}
                     {roofOpt.type === 'flat' && <rect x="-10" y="80" width="220" height="20" fill={roofColor} />}
-                    {roofOpt.type === 'hip' && <path d="M-10 100 L40 40 L160 40 L210 100 Z" fill={roofColor} />}
-                    {/* WALLS */}
-                    <rect x="0" y="100" width="200" height={floors === 2 ? 180 : 120} fill={getWallFill()} />
-                    {/* WINDOWS */}
-                    {floors === 2 ? (
-                        <>
-                            <WindowSVG x="20" y="120" w="60" h={windowOpt.type === 'pano' ? 50 : 40} />
-                            <WindowSVG x="120" y="120" w="60" h={windowOpt.type === 'pano' ? 50 : 40} />
-                            <WindowSVG x="20" y="200" w="60" h={windowOpt.type === 'pano' ? 70 : 40} />
-                            <rect x="130" y="200" width="40" height="80" fill={doorColor} stroke="white" strokeWidth="2" />
-                        </>
-                    ) : (
-                        <>
-                            <WindowSVG x="20" y="130" w="60" h={windowOpt.type === 'pano' ? 80 : 50} />
-                            <WindowSVG x="120" y="130" w="60" h={windowOpt.type === 'pano' ? 80 : 50} />
-                            <rect x="85" y="150" width="30" height="70" fill={doorColor} stroke="white" strokeWidth="2" />
-                        </>
-                    )}
-                    {/* FOUNDATION */}
+                    <rect x="0" y="100" width="200" height={floors === 2 ? 180 : 120} fill={wallColor} />
+                    <rect x="20" y="120" width="60" height="50" fill="url(#windowGrad)" stroke="white" strokeWidth="2" />
+                    <rect x="120" y="120" width="60" height="50" fill="url(#windowGrad)" stroke="white" strokeWidth="2" />
+                    <rect x="85" y={floors === 2 ? 200 : 140} width="30" height="80" fill={doorColor} stroke="white" strokeWidth="2" />
                     <rect x="-5" y={floors === 2 ? 280 : 220} width="210" height="15" fill={foundColor} />
                 </g>
             </svg>
@@ -673,12 +615,14 @@ const FloorPlanVisualizer = ({ shape, dims }) => {
     const scale = 200 / Math.max(dims.l, dims.w || dims.l); 
     const w = (dims.w || dims.l) * scale;
     const l = dims.l * scale;
-    let path = `M50,50 h${l} v${w} h-${l} z`;
+    let path = "";
+    if(shape === 'rect') path = `M50,50 h${l} v${w} h-${l} z`;
+    else if(shape === 'l-shape') path = `M50,50 h${l} v${w/2} h-${l/2} v${w/2} h-${l/2} z`; 
 
     return (
         <div className="w-full h-80 flex items-center justify-center bg-slate-50 dark:bg-slate-800 rounded-xl border-2 border-dashed border-slate-300">
              <svg width="300" height="300" viewBox="0 0 300 300">
-                 <path d={path} fill="none" stroke="currentColor" strokeWidth="4" className="text-slate-900 dark:text-white"/>
+                 <path d={path || `M50,50 h${l} v${w} h-${l} z`} fill="none" stroke="currentColor" strokeWidth="4" className="text-slate-900 dark:text-white"/>
                  <text x="100" y="150" fill="currentColor" className="text-slate-500 text-xs">2D План (Удахгүй)</text>
              </svg>
         </div>
@@ -686,17 +630,40 @@ const FloorPlanVisualizer = ({ shape, dims }) => {
 };
 
 const BuilderControls = ({ step, config, setConfig, onNext, onPrev }) => {
-     return (
-        <div className="bg-white dark:bg-slate-900 rounded-t-[2.5rem] p-6 relative z-20">
-             <div className="flex justify-between mb-4"><span className="font-bold">Алхам {step + 1}</span></div>
-             <div className="grid grid-cols-2 gap-4 mb-4">
-                 <button onClick={onNext} className="col-span-2 py-3 bg-orange-600 text-white rounded-xl font-bold">Дараах</button>
-             </div>
+    const steps = [
+        { key: 'foundation', title: 'Суурь', options: HOUSE_OPTIONS.foundation, icon: <Box size={18}/> },
+        { key: 'wall', title: 'Хана', options: HOUSE_OPTIONS.wall, icon: <BrickWall size={18}/> },
+        { key: 'roof', title: 'Дээвэр', options: HOUSE_OPTIONS.roof, icon: <Home size={18}/> },
+        { key: 'window', title: 'Цонх', options: HOUSE_OPTIONS.window, icon: <Maximize size={18}/> },
+        { key: 'door', title: 'Хаалга', options: HOUSE_OPTIONS.door, icon: <DoorOpen size={18}/> },
+        { key: 'facade', title: 'Фасад', options: HOUSE_OPTIONS.facade, icon: <PaintBucket size={18}/> },
+    ];
+    const currentStep = steps[step];
+
+    return (
+        <div className="bg-white dark:bg-slate-900 rounded-t-[2.5rem] p-6 shadow-2xl border-t border-slate-100 dark:border-slate-800 relative z-20 w-full">
+            <div className="flex justify-between items-center mb-6">
+                <div className="flex gap-1">{steps.map((_, idx) => (<div key={idx} className={`h-1.5 rounded-full transition-all duration-300 ${idx <= step ? 'w-6 bg-orange-500' : 'w-2 bg-slate-200 dark:bg-slate-700'}`}></div>))}</div>
+                <div className="text-xs font-bold text-slate-400 uppercase tracking-widest">{step + 1} / {steps.length}</div>
+            </div>
+            <h3 className="font-black text-xl text-slate-900 dark:text-white mb-4 flex items-center gap-2"><span className="p-2 bg-orange-100 dark:bg-orange-900/30 text-orange-600 rounded-lg">{currentStep.icon}</span>{currentStep.title} сонгох</h3>
+            <div className="grid grid-cols-1 gap-3 mb-8 max-h-[250px] overflow-y-auto pr-1 custom-scrollbar">
+                {currentStep.options.map(opt => (
+                    <button key={opt.id} onClick={() => setConfig({ ...config, [currentStep.key]: opt.id })} className={`p-4 rounded-2xl border-2 text-left transition-all relative group flex items-center gap-4 ${config[currentStep.key] === opt.id ? 'border-orange-500 bg-orange-50 dark:bg-orange-900/10 shadow-sm' : 'border-slate-100 dark:border-slate-800 hover:border-orange-200 hover:bg-slate-50 dark:hover:bg-slate-800/50'}`}>
+                        <div className="w-12 h-12 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 shrink-0" style={{backgroundColor: opt.color}}></div>
+                        <div className="flex-1"><div className="flex justify-between items-center mb-0.5"><span className={`text-sm font-bold ${config[currentStep.key] === opt.id ? 'text-slate-900 dark:text-white' : 'text-slate-600 dark:text-slate-400'}`}>{opt.name}</span>{opt.price > 0 && <span className="text-[10px] font-bold text-orange-600 bg-orange-100 dark:bg-orange-900/30 px-2 py-0.5 rounded-full">{formatCurrency(opt.price)}</span>}</div><span className="text-[10px] text-slate-400 line-clamp-1">{opt.desc}</span></div>
+                        {config[currentStep.key] === opt.id && <div className="text-orange-500"><CheckCircle size={22} fill="currentColor" className="text-white dark:text-slate-900" /></div>}
+                    </button>
+                ))}
+            </div>
+            <div className="flex gap-3 mt-auto">
+                {step > 0 && <button onClick={onPrev} className="flex-1 py-4 text-slate-500 font-bold hover:bg-slate-50 dark:hover:bg-slate-800 rounded-2xl transition-colors border border-slate-200 dark:border-slate-700">Буцах</button>}
+                <button onClick={onNext} className="flex-[2] py-4 bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold rounded-2xl shadow-xl hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2">{step === steps.length - 1 ? 'Дуусгах' : 'Дараах'} <ArrowRight size={20} /></button>
+            </div>
         </div>
-     )
+    );
 };
 
-// --- NEW BUDGET REPORT MODAL (Like Google Sheets) ---
 const BreakdownModal = ({ config, isOpen, onClose, floors, dimensions }) => {
     if (!isOpen) return null;
     
