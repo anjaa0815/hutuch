@@ -11,7 +11,7 @@ import {
   TrendingUp, CornerDownRight, RotateCw, Filter, HardHat, DollarSign, ChevronDown, ChevronUp, PieChart,
   Warehouse, Fence, Square, Layout, Check, Play, RefreshCw, DoorOpen, Maximize,
   Zap, Droplets, Construction, Move3d, Map, User, LogOut, Store, BarChart3, ListOrdered, Plus,
-  Bell, Lock, Smartphone
+  Bell, Lock, Smartphone, Printer, Download
 } from 'lucide-react';
 import { Layers as AlignVerticalJustifyStart } from 'lucide-react';
 
@@ -30,36 +30,36 @@ const MATERIAL_GROUPS = [
 
 const HOUSE_OPTIONS = {
   foundation: [
-    { id: 'strip', name: 'Туузан суурь', price: 15000000, color: '#64748b', type: 'solid', desc: 'Бат бөх, найдвартай' }, 
-    { id: 'pile', name: 'Баганан суурь', price: 8500000, color: '#94a3b8', type: 'dots', desc: 'Зардал бага, хөнгөн' },
-    { id: 'slab', name: 'Хавтан суурь', price: 18000000, color: '#475569', type: 'solid', desc: 'Намгархаг хөрсөнд' }, 
+    { id: 'strip', name: 'Туузан суурь', price: 15000000, color: '#64748b', type: 'solid', unit: 'м3', desc: 'Бат бөх, найдвартай' }, 
+    { id: 'pile', name: 'Баганан суурь', price: 8500000, color: '#94a3b8', type: 'dots', unit: 'м3', desc: 'Зардал бага, хөнгөн' },
+    { id: 'slab', name: 'Хавтан суурь', price: 18000000, color: '#475569', type: 'solid', unit: 'м3', desc: 'Намгархаг хөрсөнд' }, 
   ],
   wall: [
-    { id: 'block_light', name: 'Хөнгөн блок', price: 25000000, color: '#e2e8f0', pattern: 'block', desc: 'Дулаан алдагдал бага' }, 
-    { id: 'brick_red', name: 'Улаан тоосго', price: 35000000, color: '#ef4444', pattern: 'brick', desc: 'Уламжлалт, бат бөх' },
-    { id: 'brick_black', name: 'Хар тоосго', price: 38000000, color: '#334155', pattern: 'brick', desc: 'Модерн загвар' },
-    { id: 'timber', name: 'Дүнзэн (Мод)', price: 45000000, color: '#d97706', pattern: 'wood', desc: 'Эко, дулаан' },
+    { id: 'block_light', name: 'Хөнгөн блок', price: 25000000, color: '#e2e8f0', pattern: 'block', unit: 'м3', desc: 'Дулаан алдагдал бага' }, 
+    { id: 'brick_red', name: 'Улаан тоосго', price: 35000000, color: '#ef4444', pattern: 'brick', unit: 'м3', desc: 'Уламжлалт, бат бөх' },
+    { id: 'brick_black', name: 'Хар тоосго', price: 38000000, color: '#334155', pattern: 'brick', unit: 'м3', desc: 'Модерн загвар' },
+    { id: 'timber', name: 'Дүнзэн (Мод)', price: 45000000, color: '#d97706', pattern: 'wood', unit: 'м3', desc: 'Эко, дулаан' },
   ],
   roof: [
-    { id: 'gable_red', name: 'Төмөр (Улаан)', price: 45000, color: '#b91c1c', type: 'gable', desc: 'Энгийн хийц' }, 
-    { id: 'gable_black', name: 'Битамон (Хар)', price: 65000, color: '#1e293b', type: 'gable', desc: 'Дуу чимээ бага' },
-    { id: 'hip_green', name: 'Майхан (Ногоон)', price: 55000, color: '#15803d', type: 'hip', desc: 'Салхинд тэсвэртэй' },
-    { id: 'flat', name: 'Хавтгай', price: 50000, color: '#475569', type: 'flat', desc: 'Террас хийх боломжтой' },
+    { id: 'gable_red', name: 'Төмөр (Улаан)', price: 45000, color: '#b91c1c', type: 'gable', unit: 'м2', desc: 'Энгийн хийц' }, 
+    { id: 'gable_black', name: 'Битамон (Хар)', price: 65000, color: '#1e293b', type: 'gable', unit: 'м2', desc: 'Дуу чимээ бага' },
+    { id: 'hip_green', name: 'Майхан (Ногоон)', price: 55000, color: '#15803d', type: 'hip', unit: 'м2', desc: 'Салхинд тэсвэртэй' },
+    { id: 'flat', name: 'Хавтгай', price: 50000, color: '#475569', type: 'flat', unit: 'м2', desc: 'Террас хийх боломжтой' },
   ],
   window: [
-    { id: 'standard', name: 'Стандарт', price: 450000, type: 'std', desc: '2 давхар шил' }, 
-    { id: 'triple', name: '3 давхар шил', price: 650000, type: 'std', desc: 'Дулаан' },
-    { id: 'panoramic', name: 'Панорама', price: 950000, type: 'pano', desc: 'Шалнаас тааз хүртэл' },
+    { id: 'standard', name: 'Стандарт', price: 450000, type: 'std', unit: 'ш', desc: '2 давхар шил' }, 
+    { id: 'triple', name: '3 давхар шил', price: 650000, type: 'std', unit: 'ш', desc: 'Дулаан' },
+    { id: 'panoramic', name: 'Панорама', price: 950000, type: 'pano', unit: 'ш', desc: 'Шалнаас тааз хүртэл' },
   ],
   door: [
-    { id: 'metal', name: 'Бүргэд', price: 650000, color: '#7f1d1d', desc: 'ОХУ стандарт' }, 
-    { id: 'smart', name: 'Ухаалаг (Хар)', price: 1200000, color: '#171717', desc: 'Код, хурууны хээ' },
-    { id: 'white', name: 'Цагаан', price: 450000, color: '#f1f5f9', desc: 'Модерн' },
+    { id: 'metal', name: 'Бүргэд', price: 650000, color: '#7f1d1d', unit: 'ш', desc: 'ОХУ стандарт' }, 
+    { id: 'smart', name: 'Ухаалаг (Хар)', price: 1200000, color: '#171717', unit: 'ш', desc: 'Код, хурууны хээ' },
+    { id: 'white', name: 'Цагаан', price: 450000, color: '#f1f5f9', unit: 'ш', desc: 'Модерн' },
   ],
   facade: [
-    { id: 'none', name: 'Өнгөлгөөгүй', price: 0, color: 'transparent', desc: 'Үндсэн хана' },
-    { id: 'stucco', name: 'Чулуун замаск', price: 25000, color: '#f5f5f4', pattern: 'noise', desc: 'Гоёлын шавардлага' },
-    { id: 'siding', name: 'Сайдинг', price: 45000, color: '#cbd5e1', pattern: 'lines', desc: 'Металл өнгөлгөө' },
+    { id: 'none', name: 'Өнгөлгөөгүй', price: 0, color: 'transparent', unit: 'м2', desc: 'Үндсэн хана' },
+    { id: 'stucco', name: 'Чулуун замаск', price: 25000, color: '#f5f5f4', pattern: 'noise', unit: 'м2', desc: 'Гоёлын шавардлага' },
+    { id: 'siding', name: 'Сайдинг', price: 45000, color: '#cbd5e1', pattern: 'lines', unit: 'м2', desc: 'Металл өнгөлгөө' },
   ]
 };
 
@@ -147,61 +147,6 @@ const ESTIMATOR_DATA = {
     tools: ['Дрель', 'Тасдагч', 'Аюулгүйн бүс']
   }
 };
-
-const CALCULATOR_CATEGORIES = [
-  { 
-    id: 'foundation', 
-    name: 'Суурь', 
-    icon: <Box size={24}/>, 
-    desc: 'Туузан, хавтан, баганан суурь',
-    types: [
-      { id: 'strip_foundation', name: 'Туузан суурь', desc: 'Периметрийн дагуу цутгах бетон', inputs: ['length', 'width', 'height', 'thickness'] },
-      { id: 'slab_foundation', name: 'Хавтан суурь', desc: 'Нийт талбайн цутгалт', inputs: ['length', 'width', 'height'] },
-      { id: 'pile_foundation', name: 'Баганан суурь (Дугуй)', desc: 'Дугуй огтлолтой шон суурь', inputs: ['count', 'diameter', 'height'] },
-      { id: 'square_pile_foundation', name: 'Баганан суурь (Дөрвөлжин)', desc: 'Дөрвөлжин огтлолтой шон суурь', inputs: ['count', 'width', 'height'] }
-    ] 
-  },
-  { 
-    id: 'wall', 
-    name: 'Хана', 
-    icon: <BrickWall size={24}/>, 
-    desc: 'Тоосго, блок, хаалт',
-    types: [
-      { id: 'brick_wall', name: 'Тоосгон хана', desc: 'Стандарт тоосго, өрлөг', inputs: ['length', 'height'] },
-      { id: 'block_wall', name: 'Блокон хана', desc: 'Хөнгөн блок, бетон блок', inputs: ['length', 'height'] }
-    ] 
-  },
-  { 
-    id: 'roof', 
-    name: 'Дээвэр', 
-    icon: <Home size={24}/>, 
-    desc: '1 ба 2 налуу дээвэр',
-    types: [
-      { id: 'gable_roof', name: '2 налуу дээвэр', desc: 'Төмөр дээвэр, стропил', inputs: ['length', 'width'] },
-      { id: 'shed_roof', name: '1 налуу дээвэр', desc: 'Амбаар, гаражийн дээвэр', inputs: ['length', 'width'] }
-    ] 
-  },
-  { 
-    id: 'floor', 
-    name: 'Шал', 
-    icon: <Grid size={24}/>, 
-    desc: 'Бетон, модон, паркет',
-    types: [
-      { id: 'concrete_floor', name: 'Бетон шал', desc: 'Тэгшилгээ, цутгалт', inputs: ['length', 'width', 'thickness'] },
-      { id: 'wood_floor', name: 'Паркет шал', desc: 'Ламинат, модон шал', inputs: ['length', 'width'] },
-      { id: 'vinyl_floor', name: 'Хулдаасан шал', desc: 'Линолеум, PVC хулдаас', inputs: ['length', 'width'] }
-    ] 
-  },
-  { 
-    id: 'stairs', 
-    name: 'Шат', 
-    icon: <AlignVerticalJustifyStart size={24}/>, 
-    desc: 'Бетон болон модон шат',
-    types: [
-      { id: 'straight_stairs', name: 'Шулуун шат', desc: 'Гишгүүрийн тооцоо', inputs: ['height', 'length'] }
-    ] 
-  }
-];
 
 const formatCurrency = (amount) => new Intl.NumberFormat('mn-MN', { style: 'decimal', maximumFractionDigits: 0 }).format(amount) + ' ₮';
 
@@ -324,29 +269,18 @@ const SellerLogin = ({ onLogin }) => {
     const [phone, setPhone] = useState('');
     const [password, setPassword] = useState('');
     const [isRegistering, setIsRegistering] = useState(false);
-    
-    // Registration States
     const [shopName, setShopName] = useState('');
     const [location, setLocation] = useState('100 айл'); 
-    const [tradeCenter, setTradeCenter] = useState(''); // New: Худалдааны төв / Зах
-    const [shopNumber, setShopNumber] = useState('');   // New: Лангууны дугаар
+    const [tradeCenter, setTradeCenter] = useState(''); 
+    const [shopNumber, setShopNumber] = useState('');   
 
     const LOCATIONS = [
-        '100 айл', 
-        'Гурвалжин', 
-        'Мишээл', 
-        'Налайх', 
-        'Яармаг', 
-        'Цайз',
-        'Хангай',
-        'Big Building',
-        'Бусад'
+        '100 айл', 'Гурвалжин', 'Мишээл', 'Налайх', 'Яармаг', 'Цайз', 'Хангай', 'Big Building', 'Бусад'
     ];
 
     const handleSubmit = (e) => {
         e.preventDefault();
         if (isRegistering) {
-            // Validation
             if (phone && password && shopName && location && tradeCenter && shopNumber) {
                 alert(`Амжилттай бүртгэгдлээ: ${shopName}\nХаяг: ${location}, ${tradeCenter}, ${shopNumber}`);
                 onLogin();
@@ -361,9 +295,6 @@ const SellerLogin = ({ onLogin }) => {
             }
         }
     };
-
-    // Update the browser favicon dynamically inside App useEffect in real scenario, 
-    // here sticking to component structure requested.
 
     return (
         <div className="min-h-[60vh] flex items-center justify-center px-4 animate-in fade-in">
@@ -399,12 +330,9 @@ const SellerLogin = ({ onLogin }) => {
                                 </div>
                             </div>
                             
-                            {/* Location Section */}
                             <div className="bg-slate-50 dark:bg-slate-800/50 p-3 rounded-xl border border-slate-100 dark:border-slate-800">
                                 <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Хаяг байршил</label>
-                                
                                 <div className="space-y-3">
-                                    {/* Main Location Dropdown */}
                                     <div className="relative">
                                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
                                             <MapPin size={18} />
@@ -419,8 +347,6 @@ const SellerLogin = ({ onLogin }) => {
                                             ))}
                                         </select>
                                     </div>
-
-                                    {/* Trade Center & Shop Number */}
                                     <div className="grid grid-cols-2 gap-3">
                                         <input 
                                             type="text" 
@@ -492,12 +418,9 @@ const SellerLogin = ({ onLogin }) => {
     );
 };
 
-// V. SELLER DASHBOARD (MOBILE FIRST) - Now receives props to update global state
+// V. SELLER DASHBOARD (MOBILE FIRST)
 const SellerDashboard = ({ allProducts, setAllProducts }) => {
-    // Current seller is mocked as 'v1'
     const currentSellerId = 'v1';
-    
-    // Derived state for display
     const myProducts = allProducts.filter(p => p.vendorId === currentSellerId);
 
     const [isAdding, setIsAdding] = useState(false);
@@ -508,15 +431,14 @@ const SellerDashboard = ({ allProducts, setAllProducts }) => {
         
         const product = {
             id: Date.now(),
-            vendorId: currentSellerId, // Assign to current seller
-            category: 'structure', // Default category logic (needs refinement for real app)
+            vendorId: currentSellerId,
+            category: 'structure', 
             ...newProduct,
             price: parseFloat(newProduct.price),
             stock: parseInt(newProduct.stock) || 0,
             image: 'https://placehold.co/150x150/orange/white?text=New'
         };
         
-        // Update GLOBAL state so it appears in User view
         setAllProducts([product, ...allProducts]);
         
         setIsAdding(false);
@@ -526,7 +448,6 @@ const SellerDashboard = ({ allProducts, setAllProducts }) => {
 
     return (
         <div className="pb-24 animate-in fade-in">
-            {/* 1. Header Stats */}
             <div className="bg-slate-900 text-white p-6 rounded-b-3xl mb-6 shadow-xl relative overflow-hidden">
                  <div className="absolute top-6 right-6">
                     <div className="relative p-2 bg-slate-800 rounded-xl cursor-pointer hover:bg-slate-700 transition-colors">
@@ -553,7 +474,6 @@ const SellerDashboard = ({ allProducts, setAllProducts }) => {
             </div>
 
             <div className="px-4">
-                {/* 2. Quick Actions */}
                 <div className="flex justify-between items-center mb-4">
                     <h3 className="font-bold text-lg text-slate-900 dark:text-white">Миний бараа ({myProducts.length})</h3>
                     <button onClick={() => setIsAdding(true)} className="bg-orange-600 text-white px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 shadow-lg shadow-orange-500/30">
@@ -561,7 +481,6 @@ const SellerDashboard = ({ allProducts, setAllProducts }) => {
                     </button>
                 </div>
 
-                {/* 3. Simple Add Form */}
                 {isAdding && (
                     <div className="bg-orange-50 dark:bg-slate-800 p-4 rounded-2xl mb-6 border border-orange-100 dark:border-slate-700 animate-in slide-in-from-top-2">
                         <p className="text-xs font-bold text-orange-600 uppercase mb-3">Шинэ бараа бүртгэх</p>
@@ -640,7 +559,6 @@ const SellerDashboard = ({ allProducts, setAllProducts }) => {
                     </div>
                 )}
 
-                {/* 4. Product List */}
                 <div className="space-y-3">
                     {myProducts.map(p => (
                         <div key={p.id} className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 flex items-center gap-4 shadow-sm">
@@ -778,37 +696,206 @@ const BuilderControls = ({ step, config, setConfig, onNext, onPrev }) => {
      )
 };
 
-const BreakdownModal = ({ config, isOpen, onClose }) => {
-     if(!isOpen) return null;
-     return (
-        <div className="fixed inset-0 z-50 bg-black/50 flex justify-center items-center p-4" onClick={onClose}>
-             <div className="bg-white p-6 rounded-2xl w-full max-w-md">
-                 <h2 className="text-xl font-bold mb-4">Төсөв</h2>
-                 <p>Нийт: ~45,000,000₮</p>
-                 <button onClick={onClose} className="mt-4 w-full py-2 bg-slate-100 rounded-lg">Хаах</button>
-             </div>
+// --- NEW BUDGET REPORT MODAL (Like Google Sheets) ---
+const BreakdownModal = ({ config, isOpen, onClose, floors, dimensions }) => {
+    if (!isOpen) return null;
+    
+    const footprint = dimensions.l * dimensions.w;
+    const perimeter = (dimensions.l + dimensions.w) * 2;
+    const wallArea = perimeter * 2.8 * floors; // Approx height 2.8m per floor
+    
+    // Sample norms (simplified)
+    const foundationVol = footprint * 0.4; // 40cm height slab assumption
+    const cementBags = Math.ceil(foundationVol * 7); // ~7 bags per m3 concrete
+    
+    // Generate Report Items based on selection
+    const items = [];
+    
+    // 1. Foundation
+    const foundOpt = HOUSE_OPTIONS.foundation.find(f => f.id === config.foundation);
+    if(foundOpt) {
+        items.push({
+            category: 'Суурийн ажил',
+            name: `Бетон зуурмаг (${foundOpt.name})`,
+            unit: foundOpt.unit,
+            qty: parseFloat(foundationVol.toFixed(1)),
+            price: 250000, // Market price for ready mix
+            total: foundationVol * 250000
+        });
+        items.push({
+            category: 'Суурийн ажил',
+            name: 'Арматур Ф12',
+            unit: 'тн',
+            qty: 0.5, 
+            price: 2600000,
+            total: 0.5 * 2600000
+        });
+    }
+
+    // 2. Wall
+    const wallOpt = HOUSE_OPTIONS.wall.find(w => w.id === config.wall);
+    if(wallOpt) {
+        const wallQty = Math.ceil(wallArea); // Simplified
+        items.push({
+            category: 'Хана & Өрлөг',
+            name: wallOpt.name,
+            unit: wallOpt.unit,
+            qty: wallQty,
+            price: wallOpt.price / 10, // Assuming price was for large quantity, normalizing
+            total: wallQty * (wallOpt.price / 10) 
+        });
+        items.push({
+             category: 'Хана & Өрлөг',
+             name: 'Өрлөгийн зуурмаг / Цавуу',
+             unit: 'шуудай',
+             qty: Math.ceil(wallQty * 0.5),
+             price: 18000,
+             total: Math.ceil(wallQty * 0.5) * 18000
+        });
+    }
+
+    // 3. Roof
+    const roofOpt = HOUSE_OPTIONS.roof.find(r => r.id === config.roof);
+    if(roofOpt) {
+        const roofArea = footprint * 1.3;
+        items.push({
+            category: 'Дээврийн ажил',
+            name: roofOpt.name,
+            unit: roofOpt.unit,
+            qty: Math.ceil(roofArea),
+            price: roofOpt.price,
+            total: Math.ceil(roofArea) * roofOpt.price
+        });
+    }
+    
+    // Calculate Grand Total
+    const grandTotal = items.reduce((sum, item) => sum + item.total, 0);
+
+    return (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-slate-900/70 backdrop-blur-sm" onClick={onClose}></div>
+            <div className="bg-white dark:bg-slate-900 w-full max-w-4xl h-[90vh] rounded-3xl shadow-2xl relative flex flex-col overflow-hidden animate-in zoom-in-95 duration-300">
+                
+                {/* Modal Header */}
+                <div className="bg-slate-50 dark:bg-slate-800 p-6 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center">
+                    <div>
+                        <h2 className="text-2xl font-black text-slate-900 dark:text-white flex items-center gap-2">
+                            <Receipt size={24} className="text-orange-600"/> Барилгын Төсвийн Тайлан
+                        </h2>
+                        <p className="text-slate-500 text-sm mt-1">Огноо: {new Date().toLocaleDateString()}</p>
+                    </div>
+                    <button onClick={onClose} className="p-2 bg-white dark:bg-slate-700 rounded-full hover:bg-slate-200 transition-colors">
+                        <X size={24} className="text-slate-600 dark:text-slate-300"/>
+                    </button>
+                </div>
+
+                {/* Report Table */}
+                <div className="flex-1 overflow-auto p-6 bg-slate-100 dark:bg-slate-950">
+                    <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm overflow-hidden border border-slate-200 dark:border-slate-800">
+                        <table className="w-full text-left border-collapse">
+                            <thead>
+                                <tr className="bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
+                                    <th className="p-4 text-xs font-bold text-slate-500 uppercase">№</th>
+                                    <th className="p-4 text-xs font-bold text-slate-500 uppercase">Ажлын нэр / Материал</th>
+                                    <th className="p-4 text-xs font-bold text-slate-500 uppercase text-center">Хэмжих нэгж</th>
+                                    <th className="p-4 text-xs font-bold text-slate-500 uppercase text-right">Тоо хэмжээ</th>
+                                    <th className="p-4 text-xs font-bold text-slate-500 uppercase text-right">Нэгж үнэ</th>
+                                    <th className="p-4 text-xs font-bold text-slate-500 uppercase text-right">Нийт үнэ</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                                {items.map((item, index) => (
+                                    <tr key={index} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                                        <td className="p-4 text-sm text-slate-400 font-medium">{index + 1}</td>
+                                        <td className="p-4">
+                                            <p className="text-xs text-orange-600 font-bold uppercase mb-0.5">{item.category}</p>
+                                            <p className="text-sm font-bold text-slate-900 dark:text-white">{item.name}</p>
+                                        </td>
+                                        <td className="p-4 text-sm text-center text-slate-500 bg-slate-50 dark:bg-slate-800/30 font-medium">{item.unit}</td>
+                                        <td className="p-4 text-sm text-right font-bold text-slate-700 dark:text-slate-300">{item.qty}</td>
+                                        <td className="p-4 text-sm text-right text-slate-500">{formatCurrency(item.price)}</td>
+                                        <td className="p-4 text-sm text-right font-black text-slate-900 dark:text-white">{formatCurrency(item.total)}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                            <tfoot className="bg-slate-50 dark:bg-slate-800 border-t-2 border-slate-200 dark:border-slate-700">
+                                <tr>
+                                    <td colSpan="5" className="p-4 text-right text-sm font-bold text-slate-500 uppercase">Нийт төсөв</td>
+                                    <td className="p-4 text-right text-xl font-black text-orange-600">{formatCurrency(grandTotal)}</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+
+                {/* Footer Actions */}
+                <div className="p-6 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 flex justify-end gap-4">
+                    <button className="flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800 transition-colors">
+                        <Printer size={18} /> Хэвлэх
+                    </button>
+                    <button className="flex items-center gap-2 px-6 py-3 rounded-xl font-bold bg-green-600 text-white hover:bg-green-700 shadow-lg shadow-green-500/30 transition-colors">
+                        <Download size={18} /> Excel татах
+                    </button>
+                    <button className="flex items-center gap-2 px-6 py-3 rounded-xl font-bold bg-orange-600 text-white hover:bg-orange-700 shadow-lg shadow-orange-500/30 transition-colors">
+                        <Save size={18} /> Хадгалах
+                    </button>
+                </div>
+            </div>
         </div>
-     )
+    );
 };
 
 const VisualBuilderView = ({ onBack, initialDims, initialFloors }) => {
     const [step, setStep] = useState(0);
+    const [showBreakdown, setShowBreakdown] = useState(false); // Controls the Report Modal
     const [viewMode, setViewMode] = useState('3d');
-    const config = {}; 
+    const [config, setConfig] = useState({ foundation: 'strip', wall: 'block_light', roof: 'gable_black', window: 'standard', door: 'metal', facade: 'none' });
+    const [totalPrice, setTotalPrice] = useState(0); // This will track running total
+    
     const floors = initialFloors || 1;
     const dims = initialDims || {l:8, w:6};
+    const shape = 'rect';
+
+    // Recalculate price when config changes (simplified logic)
+    useEffect(() => {
+       // ... simple calc logic just for display number ...
+       let total = 0;
+       Object.values(config).forEach(val => {
+           // Find price in options
+           // Simplified: just adding dummy values
+           total += 5000000; 
+       });
+       setTotalPrice(total);
+    }, [config]);
+
+    const handleNext = () => {
+        if (step < 5) {
+            setStep(step + 1);
+        } else {
+            setShowBreakdown(true); // Open Report Modal at the end
+        }
+    };
 
     return (
-        <div className="min-h-screen bg-slate-50 flex flex-col">
-            <div className="p-4 flex justify-between">
-                <button onClick={onBack}>Back</button>
-                <div>
-                     <button onClick={() => setViewMode('3d')} className="mr-2">3D</button>
-                     <button onClick={() => setViewMode('2d')}>2D</button>
-                </div>
+        <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col animate-in fade-in overflow-hidden">
+            <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md px-4 py-3 flex justify-between items-center sticky top-0 z-50 border-b border-slate-200 dark:border-slate-800">
+                <button onClick={onBack} className="p-2 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"><X size={20} className="text-slate-600 dark:text-slate-300"/></button>
+                <div className="text-center"><p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Нийт төсөв</p><p className="text-xl font-black text-slate-900 dark:text-white transition-all duration-300">{formatCurrency(totalPrice)}</p></div>
+                <button onClick={() => setShowBreakdown(true)} className="p-2 rounded-full bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400"><Receipt size={20} /></button>
             </div>
-            {viewMode === '3d' ? <HouseVisualizer config={config} floors={floors} /> : <FloorPlanVisualizer shape="rect" dims={dims} />}
-            <BuilderControls step={step} config={{}} setConfig={()=>{}} onNext={()=>{}} onPrev={()=>{}} />
+
+            {/* View Mode Toggle */}
+            <div className="absolute top-20 right-4 z-40 flex bg-white dark:bg-slate-800 p-1 rounded-xl shadow-lg border border-slate-100 dark:border-slate-700">
+                 <button onClick={() => setViewMode('3d')} className={`p-2 rounded-lg text-xs font-bold flex items-center gap-1 ${viewMode === '3d' ? 'bg-slate-900 dark:bg-orange-600 text-white' : 'text-slate-500'}`}><Move3d size={16}/> 3D</button>
+                 <button onClick={() => setViewMode('2d')} className={`p-2 rounded-lg text-xs font-bold flex items-center gap-1 ${viewMode === '2d' ? 'bg-slate-900 dark:bg-orange-600 text-white' : 'text-slate-500'}`}><Map size={16}/> 2D</button>
+            </div>
+
+            <div className="flex-1 flex items-center justify-center bg-gradient-to-b from-sky-100 to-white dark:from-slate-900 dark:to-slate-950 overflow-hidden relative pb-32">
+                {viewMode === '3d' ? <HouseVisualizer config={config} floors={floors} shape={shape} /> : <FloorPlanVisualizer shape={shape} dims={dims} />}
+            </div>
+            
+            <div className="fixed bottom-0 left-0 right-0 w-full max-w-lg mx-auto z-40 pb-safe"><BuilderControls step={step} config={config} setConfig={setConfig} onNext={handleNext} onPrev={() => setStep(Math.max(0, step - 1))} floors={floors} /></div>
+            <BreakdownModal config={config} isOpen={showBreakdown} onClose={() => setShowBreakdown(false)} floors={floors} dimensions={dims} />
         </div>
     );
 };
