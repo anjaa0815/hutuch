@@ -16,7 +16,7 @@ import {
 import { Layers as AlignVerticalJustifyStart } from 'lucide-react';
 
 // ==========================================
-// 1. DATA CONSTANTS (Өгөгдлийн сан)
+// 1. DATA CONSTANTS & UTILS
 // ==========================================
 
 const MATERIAL_GROUPS = [
@@ -361,6 +361,9 @@ const SellerLogin = ({ onLogin }) => {
             }
         }
     };
+
+    // Update the browser favicon dynamically inside App useEffect in real scenario, 
+    // here sticking to component structure requested.
 
     return (
         <div className="min-h-[60vh] flex items-center justify-center px-4 animate-in fade-in">
