@@ -10,7 +10,8 @@ import {
   Sun, Moon, Facebook, Instagram, Twitter, Mail, LayoutDashboard, Layers, Divide, Combine,
   TrendingUp, CornerDownRight, RotateCw, Filter, HardHat, DollarSign, ChevronDown, ChevronUp, PieChart,
   Warehouse, Fence, Square, Layout, Check, Play, RefreshCw, DoorOpen, Maximize,
-  Zap, Droplets, Construction, Move3d, Map, User, LogOut, Store, BarChart3, ListOrdered, Plus
+  Zap, Droplets, Construction, Move3d, Map, User, LogOut, Store, BarChart3, ListOrdered, Plus,
+  Bell, Lock, Smartphone
 } from 'lucide-react';
 import { Layers as AlignVerticalJustifyStart } from 'lucide-react';
 
@@ -275,7 +276,7 @@ const Header = ({ cartCount, onNavigate, onOpenCart, darkMode, toggleDarkMode, u
                         <button onClick={() => onNavigate('estimator')} className="text-sm font-bold text-slate-600 dark:text-slate-300 hover:text-orange-600 transition-colors">Төсөвлөх</button>
                     </>
                 ) : (
-                    <button className="text-sm font-bold text-orange-600 cursor-default">Лангууны удирдлага</button>
+                    <button className="text-sm font-bold text-orange-600 cursor-default">Борлуулагчийн удирдлага</button>
                 )}
             </nav>
 
@@ -285,7 +286,7 @@ const Header = ({ cartCount, onNavigate, onOpenCart, darkMode, toggleDarkMode, u
                     className={`p-2.5 rounded-xl transition-colors flex items-center gap-2 text-xs font-bold ${userRole === 'seller' ? 'bg-orange-100 text-orange-700' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'}`}
                 >
                     {userRole === 'user' ? <User size={16} /> : <Store size={16} />}
-                    <span className="hidden sm:inline">{userRole === 'user' ? 'Хэрэглэгч' : 'Лангуу'}</span>
+                    <span className="hidden sm:inline">{userRole === 'user' ? 'Хэрэглэгч' : 'Борлуулагч'}</span>
                 </button>
 
                 <button onClick={toggleDarkMode} className="p-2.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-xl transition-colors">
@@ -318,40 +319,223 @@ const Footer = () => (
     </footer>
 );
 
-// V. SELLER DASHBOARD (MOBILE FIRST)
-const SellerDashboard = () => {
-    const [products, setProducts] = useState(PRODUCTS.filter(p => p.vendorId === 'v1')); // Mock logged in as v1
+// --- SELLER LOGIN COMPONENT ---
+const SellerLogin = ({ onLogin }) => {
+    const [phone, setPhone] = useState('');
+    const [password, setPassword] = useState('');
+    const [isRegistering, setIsRegistering] = useState(false);
+    
+    // Registration States
+    const [shopName, setShopName] = useState('');
+    const [location, setLocation] = useState('100 айл'); 
+    const [tradeCenter, setTradeCenter] = useState(''); // New: Худалдааны төв / Зах
+    const [shopNumber, setShopNumber] = useState('');   // New: Лангууны дугаар
+
+    const LOCATIONS = [
+        '100 айл', 
+        'Гурвалжин', 
+        'Мишээл', 
+        'Налайх', 
+        'Яармаг', 
+        'Цайз',
+        'Хангай',
+        'Big Building',
+        'Бусад'
+    ];
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        if (isRegistering) {
+            // Validation
+            if (phone && password && shopName && location && tradeCenter && shopNumber) {
+                alert(`Амжилттай бүртгэгдлээ: ${shopName}\nХаяг: ${location}, ${tradeCenter}, ${shopNumber}`);
+                onLogin();
+            } else {
+                alert("Бүх талбарыг бөглөнө үү");
+            }
+        } else {
+            if (phone && password) {
+                onLogin();
+            } else {
+                alert("Утас болон нууц үгээ оруулна уу");
+            }
+        }
+    };
+
+    return (
+        <div className="min-h-[60vh] flex items-center justify-center px-4 animate-in fade-in">
+            <div className="bg-white dark:bg-slate-900 p-8 rounded-3xl shadow-xl w-full max-w-md border border-slate-100 dark:border-slate-800">
+                <div className="text-center mb-8">
+                    <div className="bg-orange-100 dark:bg-orange-900/30 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 text-orange-600 dark:text-orange-400">
+                        <Store size={32} />
+                    </div>
+                    <h2 className="text-2xl font-black text-slate-900 dark:text-white">
+                        {isRegistering ? 'Шинэ борлуулагч бүртгэх' : 'Борлуулагч нэвтрэх'}
+                    </h2>
+                    <p className="text-slate-500 text-sm mt-2">
+                        {isRegistering ? 'Мэдээллээ оруулаад борлуулж эхлээрэй' : 'Бараагаа удирдаж, захиалгаа хянаарай'}
+                    </p>
+                </div>
+
+                <form onSubmit={handleSubmit} className="space-y-4">
+                    {isRegistering && (
+                        <>
+                            <div>
+                                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Борлуулагчийн нэр</label>
+                                <div className="relative">
+                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                                        <Store size={18} />
+                                    </div>
+                                    <input 
+                                        type="text" 
+                                        value={shopName}
+                                        onChange={(e) => setShopName(e.target.value)}
+                                        className="w-full pl-10 p-3 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 focus:border-orange-500 outline-none transition-colors"
+                                        placeholder="Миний Дэлгүүр"
+                                    />
+                                </div>
+                            </div>
+                            
+                            {/* Location Section */}
+                            <div className="bg-slate-50 dark:bg-slate-800/50 p-3 rounded-xl border border-slate-100 dark:border-slate-800">
+                                <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Хаяг байршил</label>
+                                
+                                <div className="space-y-3">
+                                    {/* Main Location Dropdown */}
+                                    <div className="relative">
+                                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                                            <MapPin size={18} />
+                                        </div>
+                                        <select 
+                                            value={location}
+                                            onChange={(e) => setLocation(e.target.value)}
+                                            className="w-full pl-10 p-3 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 focus:border-orange-500 outline-none transition-colors text-slate-900 dark:text-white"
+                                        >
+                                            {LOCATIONS.map(loc => (
+                                                <option key={loc} value={loc}>{loc}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    {/* Trade Center & Shop Number */}
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <input 
+                                            type="text" 
+                                            value={tradeCenter}
+                                            onChange={(e) => setTradeCenter(e.target.value)}
+                                            className="w-full p-3 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 focus:border-orange-500 outline-none transition-colors text-sm"
+                                            placeholder="Худалдааны төв"
+                                        />
+                                        <input 
+                                            type="text" 
+                                            value={shopNumber}
+                                            onChange={(e) => setShopNumber(e.target.value)}
+                                            className="w-full p-3 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 focus:border-orange-500 outline-none transition-colors text-sm"
+                                            placeholder="Лангуу №"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        </>
+                    )}
+                    
+                    <div>
+                        <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Утасны дугаар</label>
+                        <div className="relative">
+                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                                <Smartphone size={18} />
+                            </div>
+                            <input 
+                                type="tel" 
+                                value={phone}
+                                onChange={(e) => setPhone(e.target.value)}
+                                className="w-full pl-10 p-3 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 focus:border-orange-500 outline-none transition-colors"
+                                placeholder="8888-8888"
+                            />
+                        </div>
+                    </div>
+                    <div>
+                        <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Нууц үг</label>
+                        <div className="relative">
+                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                                <Lock size={18} />
+                            </div>
+                            <input 
+                                type="password" 
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                className="w-full pl-10 p-3 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 focus:border-orange-500 outline-none transition-colors"
+                                placeholder="••••••••"
+                            />
+                        </div>
+                    </div>
+                    
+                    <button type="submit" className="w-full py-3.5 bg-slate-900 dark:bg-orange-600 text-white font-bold rounded-xl shadow-lg hover:opacity-90 transition-opacity mt-2">
+                        {isRegistering ? 'Бүртгүүлэх' : 'Нэвтрэх'}
+                    </button>
+                </form>
+                
+                <p className="text-center text-xs text-slate-400 mt-6">
+                    {isRegistering ? 'Бүртгэлтэй юу?' : 'Бүртгэлгүй бол'} 
+                    <span 
+                        onClick={() => setIsRegistering(!isRegistering)}
+                        className="text-orange-600 font-bold cursor-pointer hover:underline ml-1"
+                    >
+                        {isRegistering ? 'Нэвтрэх' : 'энд дарж бүртгүүлнэ үү'}
+                    </span>.
+                </p>
+            </div>
+        </div>
+    );
+};
+
+// V. SELLER DASHBOARD (MOBILE FIRST) - Now receives props to update global state
+const SellerDashboard = ({ allProducts, setAllProducts }) => {
+    // Current seller is mocked as 'v1'
+    const currentSellerId = 'v1';
+    
+    // Derived state for display
+    const myProducts = allProducts.filter(p => p.vendorId === currentSellerId);
+
     const [isAdding, setIsAdding] = useState(false);
-    // Added color, size, stock to state
-    const [newProduct, setNewProduct] = useState({ name: '', price: '', unit: 'ш', stock: '', color: '', size: '' });
+    const [newProduct, setNewProduct] = useState({ name: '', price: '', unit: 'ш', stock: '', color: '', size: '', type: 'brick' });
 
     const handleAddProduct = () => {
         if (!newProduct.name || !newProduct.price) return;
+        
         const product = {
             id: Date.now(),
-            vendorId: 'v1',
-            category: 'structure',
+            vendorId: currentSellerId, // Assign to current seller
+            category: 'structure', // Default category logic (needs refinement for real app)
             ...newProduct,
             price: parseFloat(newProduct.price),
             stock: parseInt(newProduct.stock) || 0,
             image: 'https://placehold.co/150x150/orange/white?text=New'
         };
-        setProducts([product, ...products]);
+        
+        // Update GLOBAL state so it appears in User view
+        setAllProducts([product, ...allProducts]);
+        
         setIsAdding(false);
-        // Reset state including new fields
-        setNewProduct({ name: '', price: '', unit: 'ш', stock: '', color: '', size: '' });
+        setNewProduct({ name: '', price: '', unit: 'ш', color: '', size: '', stock: '', type: 'brick' });
+        alert("Бараа амжилттай нэмэгдлээ! Хэрэглэгчийн хэсэгт харагдах болно.");
     };
 
     return (
         <div className="pb-24 animate-in fade-in">
             {/* 1. Header Stats */}
-            <div className="bg-slate-900 text-white p-6 rounded-b-3xl mb-6 shadow-xl">
+            <div className="bg-slate-900 text-white p-6 rounded-b-3xl mb-6 shadow-xl relative overflow-hidden">
+                 <div className="absolute top-6 right-6">
+                    <div className="relative p-2 bg-slate-800 rounded-xl cursor-pointer hover:bg-slate-700 transition-colors">
+                        <Bell size={20} className="text-slate-300"/>
+                        <span className="absolute top-1 right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-slate-900"></span>
+                    </div>
+                </div>
                 <div className="flex justify-between items-center mb-6">
                     <div>
                         <h2 className="text-2xl font-bold">Төмөр Трейд</h2>
                         <div className="flex items-center gap-1 text-slate-400 text-sm"><MapPin size={14}/> 100 айл, 2-р эгнээ</div>
                     </div>
-                    <div className="bg-orange-500 p-2 rounded-xl"><Store size={24}/></div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                     <div className="bg-slate-800 p-4 rounded-2xl">
@@ -368,17 +552,32 @@ const SellerDashboard = () => {
             <div className="px-4">
                 {/* 2. Quick Actions */}
                 <div className="flex justify-between items-center mb-4">
-                    <h3 className="font-bold text-lg text-slate-900 dark:text-white">Миний бараа ({products.length})</h3>
+                    <h3 className="font-bold text-lg text-slate-900 dark:text-white">Миний бараа ({myProducts.length})</h3>
                     <button onClick={() => setIsAdding(true)} className="bg-orange-600 text-white px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 shadow-lg shadow-orange-500/30">
                         <Plus size={16}/> Нэмэх
                     </button>
                 </div>
 
-                {/* 3. Simple Add Form (Modal-like inline) */}
+                {/* 3. Simple Add Form */}
                 {isAdding && (
                     <div className="bg-orange-50 dark:bg-slate-800 p-4 rounded-2xl mb-6 border border-orange-100 dark:border-slate-700 animate-in slide-in-from-top-2">
                         <p className="text-xs font-bold text-orange-600 uppercase mb-3">Шинэ бараа бүртгэх</p>
                         <div className="space-y-3">
+                            <select 
+                                className="w-full p-3 rounded-xl border border-slate-200 outline-none bg-white dark:bg-slate-700 text-slate-900 dark:text-white dark:border-slate-600"
+                                value={newProduct.type}
+                                onChange={e => setNewProduct({...newProduct, type: e.target.value})}
+                            >
+                                <option value="cement">Цемент</option>
+                                <option value="brick">Тоосго/Блок</option>
+                                <option value="paint">Будаг/Эмульс</option>
+                                <option value="roof">Дээвэр</option>
+                                <option value="sand">Элс/Хайрга</option>
+                                <option value="floor">Паркет/Шал</option>
+                                <option value="pipes">Хоолой/Сантехник</option>
+                                <option value="wire">Цахилгаан утас</option>
+                            </select>
+
                             <input 
                                 placeholder="Барааны нэр (Ж: МАК Цемент)" 
                                 className="w-full p-3 rounded-xl border border-slate-200 outline-none focus:border-orange-500 text-slate-900 dark:text-white dark:bg-slate-700 dark:border-slate-600"
@@ -386,23 +585,21 @@ const SellerDashboard = () => {
                                 onChange={e => setNewProduct({...newProduct, name: e.target.value})}
                             />
                             
-                            {/* Color and Size Row */}
                             <div className="flex gap-3">
                                 <input 
-                                    placeholder="Өнгө (Ж: Улаан)" 
+                                    placeholder="Өнгө" 
                                     className="flex-1 p-3 rounded-xl border border-slate-200 outline-none focus:border-orange-500 text-slate-900 dark:text-white dark:bg-slate-700 dark:border-slate-600"
                                     value={newProduct.color}
                                     onChange={e => setNewProduct({...newProduct, color: e.target.value})}
                                 />
                                 <input 
-                                    placeholder="Хэмжээ (Ж: 60x30)" 
+                                    placeholder="Хэмжээ" 
                                     className="flex-1 p-3 rounded-xl border border-slate-200 outline-none focus:border-orange-500 text-slate-900 dark:text-white dark:bg-slate-700 dark:border-slate-600"
                                     value={newProduct.size}
                                     onChange={e => setNewProduct({...newProduct, size: e.target.value})}
                                 />
                             </div>
 
-                            {/* Price and Stock Row */}
                             <div className="flex gap-3">
                                 <input 
                                     type="number" 
@@ -413,7 +610,7 @@ const SellerDashboard = () => {
                                 />
                                 <input 
                                     type="number" 
-                                    placeholder="Үлдэгдэл тоо" 
+                                    placeholder="Үлдэгдэл" 
                                     className="flex-1 p-3 rounded-xl border border-slate-200 outline-none focus:border-orange-500 text-slate-900 dark:text-white dark:bg-slate-700 dark:border-slate-600"
                                     value={newProduct.stock}
                                     onChange={e => setNewProduct({...newProduct, stock: e.target.value})}
@@ -430,8 +627,6 @@ const SellerDashboard = () => {
                                 <option value="тн">тн</option>
                                 <option value="шуудай">шуудай</option>
                                 <option value="м">м</option>
-                                <option value="рулон">рулон</option>
-                                <option value="хайрцаг">хайрцаг</option>
                             </select>
 
                             <div className="flex gap-3 pt-2">
@@ -444,13 +639,12 @@ const SellerDashboard = () => {
 
                 {/* 4. Product List */}
                 <div className="space-y-3">
-                    {products.map(p => (
+                    {myProducts.map(p => (
                         <div key={p.id} className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 flex items-center gap-4 shadow-sm">
                             <img src={p.image} className="w-12 h-12 rounded-lg bg-slate-100 object-cover" alt="" />
                             <div className="flex-1">
                                 <h4 className="font-bold text-slate-900 dark:text-white text-sm">{p.name}</h4>
                                 <div className="flex flex-wrap gap-2 mt-1">
-                                     {/* Display color and size if available */}
                                     {p.color && <span className="text-[10px] bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded text-slate-600 dark:text-slate-300">{p.color}</span>}
                                     {p.size && <span className="text-[10px] bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded text-slate-600 dark:text-slate-300">{p.size}</span>}
                                 </div>
@@ -663,27 +857,26 @@ const SupplierCard = ({ supplier, onAdd }) => (
     </div>
 );
 
-const CategoryDetail = ({ categoryId, groupId, onBack, onAddToCart }) => {
-    // Correct filtering based on INITIAL_SUPPLIERS keys
+const CategoryDetail = ({ categoryId, groupId, onBack, onAddToCart, allProducts }) => {
+    // Determine which products to show based on group or category
     let suppliers = [];
     
-    // Logic to find suppliers based on the clicked category or group
-    // In this simplified version, we map the group ID to specific keys in INITIAL_SUPPLIERS
+    // Logic to filter products based on the 'type' property we injected in App component
     if (groupId === 'structure') {
-        suppliers = [...(INITIAL_SUPPLIERS.cement || []), ...(INITIAL_SUPPLIERS.brick || [])];
+        suppliers = allProducts.filter(p => ['cement', 'brick', 'sand'].includes(p.type));
     } else if (groupId === 'plumbing') {
-        suppliers = [...(INITIAL_SUPPLIERS.pipes || []), ...(INITIAL_SUPPLIERS.faucet || [])];
+        suppliers = allProducts.filter(p => ['pipes', 'faucet'].includes(p.type));
     } else if (groupId === 'electric') {
-        suppliers = [...(INITIAL_SUPPLIERS.wire || []), ...(INITIAL_SUPPLIERS.switch || [])];
+        suppliers = allProducts.filter(p => ['wire', 'switch'].includes(p.type));
     } else if (groupId === 'finishing') {
-        suppliers = [...(INITIAL_SUPPLIERS.paint || []), ...(INITIAL_SUPPLIERS.tile || []), ...(INITIAL_SUPPLIERS.wallpaper || [])];
+        suppliers = allProducts.filter(p => ['paint', 'tile', 'wallpaper'].includes(p.type));
     } else if (groupId === 'wood') {
-        suppliers = [...(INITIAL_SUPPLIERS.floor || []), ...(INITIAL_SUPPLIERS.timber_raw || [])];
+        suppliers = allProducts.filter(p => ['floor', 'timber_raw'].includes(p.type));
     } else if (groupId === 'metal') {
-        suppliers = [...(INITIAL_SUPPLIERS.roof || [])];
+        suppliers = allProducts.filter(p => ['roof'].includes(p.type));
     } else if (categoryId) {
-        // Fallback to specific category if provided
-        suppliers = INITIAL_SUPPLIERS[categoryId] || [];
+        // Fallback for direct category access if needed
+        suppliers = allProducts.filter(p => p.type === categoryId);
     }
 
     return (
@@ -718,6 +911,20 @@ const RentalScreen = ({ onBack }) => (
     <div className="animate-in slide-in-from-right py-8"><div className="flex items-center gap-4 mb-8"><button onClick={onBack} className="p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-white transition-colors shadow-sm"><ArrowLeft size={20}/></button><h1 className="text-2xl font-bold text-slate-900 dark:text-white">Багаж түрээс</h1></div><div className="grid grid-cols-1 md:grid-cols-2 gap-6">{RENTALS.map(tool => (<div key={tool.id} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[2rem] p-5 flex gap-5 shadow-sm"><div className="w-24 h-24 bg-slate-100 dark:bg-slate-800 rounded-2xl shrink-0 flex items-center justify-center overflow-hidden"><div className="w-full h-full bg-cover bg-center" style={{backgroundImage: `url(${tool.image})`}} /></div><div className="flex-1"> <h3 className="font-bold text-slate-900 dark:text-white text-base line-clamp-1">{tool.name}</h3><span className="block text-lg font-bold text-indigo-600 dark:text-indigo-400 mt-2">{formatCurrency(tool.price)}</span></div></div>))}</div></div>
 );
 
+const CartDrawer = ({ cart, isOpen, onClose, onRemoveItem, onCheckout }) => {
+    if (!isOpen) return null;
+    return (
+        <div className="fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm flex justify-end" onClick={() => onClose()}>
+            <div className="w-full max-w-sm bg-white dark:bg-slate-950 h-full p-6 animate-in slide-in-from-right border-l border-slate-200 dark:border-slate-800 shadow-2xl" onClick={e => e.stopPropagation()}>
+                <div className="flex justify-between items-center mb-6"><h2 className="text-xl font-bold text-slate-900 dark:text-white">Сагс ({cart.length})</h2><button onClick={() => onClose()} className="p-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-full"><X size={20}/></button></div>
+                {cart.length === 0 ? (<div className="text-center py-20 text-slate-400 flex flex-col items-center"><ShoppingBag size={48} className="mb-4 opacity-20" /><p>Сагс хоосон байна.</p></div>) : (
+                    <div className="space-y-4">{cart.map((item, i) => (<div key={i} className="flex justify-between items-center border-b border-slate-100 dark:border-slate-800 pb-3"><div><h4 className="font-bold text-slate-900 dark:text-white text-sm line-clamp-1">{item.name}</h4><p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{formatCurrency(item.price)}</p></div><button onClick={() => onRemoveItem(i)} className="text-slate-300 hover:text-red-500 p-2"><X size={16}/></button></div>))}<button onClick={onCheckout} className="w-full bg-slate-900 dark:bg-orange-600 text-white py-4 rounded-xl font-bold mt-6 hover:bg-slate-800 dark:hover:bg-orange-700 shadow-lg transition-all">Төлбөр төлөх</button></div>
+                )}
+            </div>
+        </div>
+    );
+};
+
 const QuickCalculator = ({ typeId, typeName, inputs, onCalculate }) => {
     const [val1, setVal1] = useState(0); const [val2, setVal2] = useState(0); const [val3, setVal3] = useState(0);
     const handleCalc = () => {
@@ -744,61 +951,13 @@ const QuickCalculator = ({ typeId, typeName, inputs, onCalculate }) => {
 };
 
 const Estimator = ({ onBack }) => {
-    const [mode, setMode] = useState('house');
-    const [activeCategory, setActiveCategory] = useState(null);
-    const [activeType, setActiveType] = useState(null);
-    const [w, setW] = useState(6); const [l, setL] = useState(8);
-    const [showDetails, setShowDetails] = useState(false);
-    const foundationVol = ((w + l) * 2 * 0.4 * 1.0).toFixed(1);
-    
     return (
         <div className="animate-in fade-in zoom-in-95 max-w-4xl mx-auto py-8 px-4 sm:px-0">
              <button onClick={onBack} className="flex items-center text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white mb-6 text-sm font-bold bg-white dark:bg-slate-800 px-4 py-2 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 transition-colors"><ArrowLeft size={18} className="mr-2"/> Буцах</button>
-             <div className="flex bg-slate-100 dark:bg-slate-800 p-1.5 rounded-2xl mb-8 max-w-md mx-auto">
-                <button onClick={() => {setMode('house'); setActiveCategory(null); setActiveType(null);}} className={`flex-1 py-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all ${mode === 'house' ? 'bg-white dark:bg-slate-700 shadow-sm text-slate-900 dark:text-white' : 'text-slate-500 dark:text-slate-400'}`}><Home size={18} /> Бүтэн байшин</button>
-                <button onClick={() => setMode('material')} className={`flex-1 py-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all ${mode === 'material' ? 'bg-white dark:bg-slate-700 shadow-sm text-slate-900 dark:text-white' : 'text-slate-500 dark:text-slate-400'}`}><Combine size={18} /> Нарийвчилсан</button>
-            </div>
-            {mode === 'house' ? (
-                <>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-                        <div className="bg-white dark:bg-slate-900 rounded-[2rem] p-8 shadow-xl border border-slate-100 dark:border-slate-800">
-                             <div className="flex items-center gap-4 mb-8"><div className="p-4 bg-orange-100 dark:bg-orange-500/20 text-orange-600 dark:text-orange-400 rounded-2xl"><ClipboardList size={32}/></div><div><h2 className="font-bold text-2xl text-slate-900 dark:text-white">Байшин тооцоолох</h2><p className="text-sm text-slate-500 dark:text-slate-400">Байшингийн хэмжээг оруулна уу</p></div></div>
-                             <div className="space-y-6">
-                                <div className="space-y-2"><label className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">Урт (метр)</label><input type="number" value={l} onChange={e=>setL(parseFloat(e.target.value) || 0)} className="w-full text-center py-4 bg-slate-50 dark:bg-slate-800 rounded-2xl font-bold text-slate-900 dark:text-white border-2 border-transparent focus:border-orange-500 outline-none text-2xl transition-all" /></div>
-                                <div className="space-y-2"><label className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">Өргөн (метр)</label><input type="number" value={w} onChange={e=>setW(parseFloat(e.target.value) || 0)} className="w-full text-center py-4 bg-slate-50 dark:bg-slate-800 rounded-2xl font-bold text-slate-900 dark:text-white border-2 border-transparent focus:border-orange-500 outline-none text-2xl transition-all" /></div>
-                             </div>
-                        </div>
-                        <div className="space-y-4">
-                            <div className="bg-slate-50 dark:bg-slate-800 rounded-[2rem] p-8 border border-slate-100 dark:border-slate-700 h-full flex flex-col justify-center">
-                                <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-6">Урьдчилсан тооцоо</h3>
-                                <div className="space-y-4 mb-8">
-                                    <div className="flex justify-between items-center p-4 bg-white dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-800"><span className="text-sm font-medium text-slate-600 dark:text-slate-300">Суурийн бетон</span><span className="font-bold text-xl text-slate-900 dark:text-white">~{foundationVol} м³</span></div>
-                                </div>
-                                <button onClick={() => setShowDetails(true)} className="w-full bg-slate-900 dark:bg-orange-600 text-white py-4 rounded-2xl font-bold hover:bg-slate-800 dark:hover:bg-orange-700 shadow-lg shadow-slate-200 dark:shadow-none active:scale-95 transition-all flex items-center justify-center gap-2"><FileText size={20} /> Дэлгэрэнгүй жагсаалт харах</button>
-                            </div>
-                        </div>
-                    </div>
-                    {showDetails && (<div className="space-y-6 animate-in slide-in-from-bottom-4"><h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-4">Нарийвчилсан тооцоо</h2><div className="grid grid-cols-1 md:grid-cols-3 gap-6">{['foundation', 'wall', 'roof'].map(key => { const section = ESTIMATOR_DATA[key]; if (!section) return null; return (<div key={key} className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm"><div className="flex items-center gap-3 mb-4"><div className="p-2 bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 rounded-lg">{key === 'foundation' && <Box size={20}/>}{key === 'wall' && <BrickWall size={20}/>}{key === 'roof' && <Home size={20}/>}</div><div><h3 className="font-bold text-slate-900 dark:text-white">{section.title}</h3><p className="text-xs text-slate-500 dark:text-slate-400">{section.desc}</p></div></div><ul className="space-y-3 mb-6">{section.items.map((item, idx) => (<li key={idx} className="flex justify-between items-center text-sm border-b border-slate-100 dark:border-slate-800 pb-2 last:border-0 last:pb-0"><span className="text-slate-600 dark:text-slate-300">{item.name}</span><span className="font-bold text-slate-900 dark:text-white bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded">{item.calc(w, l)} {item.unit}</span></li>))}</ul><div className="pt-4 border-t border-dashed border-slate-200 dark:border-slate-700"><p className="text-xs font-bold text-slate-400 uppercase mb-2 flex items-center gap-1"><Wrench size={12}/> Хэрэг болох багаж</p><div className="flex flex-wrap gap-1">{section.tools.map((t, i) => (<span key={i} className="text-[10px] bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700 px-2 py-1 rounded-full">{t}</span>))}</div></div></div>); })}</div></div>)}
-                </>
-            ) : (
-                <div className="space-y-6 animate-in slide-in-from-right">
-                    {!activeCategory ? (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {CALCULATOR_CATEGORIES.map(cat => (<div key={cat.id} onClick={() => setActiveCategory(cat.id)} className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-lg hover:border-orange-200 dark:hover:border-orange-800 transition-all cursor-pointer group"><div className="flex items-start justify-between mb-4"><div className="p-3 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-xl group-hover:bg-orange-100 dark:group-hover:bg-orange-900/30 group-hover:text-orange-600 dark:group-hover:text-orange-400 transition-colors">{cat.icon}</div><ChevronRight className="text-slate-300 dark:text-slate-600 group-hover:text-orange-500 transition-colors" /></div><h3 className="text-lg font-bold text-slate-900 dark:text-white mb-1">{cat.name}</h3><p className="text-sm text-slate-500 dark:text-slate-400">{cat.desc}</p></div>))}
-                        </div>
-                    ) : !activeType ? (
-                        <div>
-                             <div className="flex items-center gap-2 mb-6"><button onClick={() => setActiveCategory(null)} className="text-sm text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white">Ангилал</button><ChevronRight size={14} className="text-slate-400"/><span className="text-sm font-bold text-slate-900 dark:text-white">{CALCULATOR_CATEGORIES.find(c => c.id === activeCategory)?.name}</span></div>
-                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">{CALCULATOR_CATEGORIES.find(c => c.id === activeCategory)?.types.map(type => (<div key={type.id} onClick={() => setActiveType(type)} className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm hover:border-indigo-500 dark:hover:border-orange-500 cursor-pointer transition-all"><h4 className="font-bold text-slate-900 dark:text-white mb-1">{type.name}</h4><p className="text-sm text-slate-500 dark:text-slate-400">{type.desc}</p></div>))}</div>
-                        </div>
-                    ) : (
-                         <div>
-                            <div className="flex items-center gap-2 mb-6"><button onClick={() => setActiveCategory(null)} className="text-sm text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white">Ангилал</button><ChevronRight size={14} className="text-slate-400"/><button onClick={() => setActiveType(null)} className="text-sm text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white">{CALCULATOR_CATEGORIES.find(c => c.id === activeCategory)?.name}</button><ChevronRight size={14} className="text-slate-400"/><span className="text-sm font-bold text-slate-900 dark:text-white">{activeType.name}</span></div>
-                            <QuickCalculator typeId={activeType.id} typeName={activeType.name} inputs={activeType.inputs} onCalculate={(qty, unit) => alert(`Танд ойролцоогоор ${qty} ${unit} хэрэгтэй.`)} />
-                        </div>
-                    )}
-                </div>
-            )}
+             <div className="bg-white dark:bg-slate-900 rounded-[2rem] p-8 shadow-xl border border-slate-100 dark:border-slate-800">
+                 <h2 className="font-bold text-2xl text-slate-900 dark:text-white mb-4">Нарийвчилсан тооцоолуур</h2>
+                 <p className="text-slate-500">Энд та барилгын хийц тус бүрээр нарийн тооцоо хийх боломжтой.</p>
+             </div>
         </div>
     );
 };
@@ -816,28 +975,22 @@ const HomeView = ({ onNavigate, onSelectCategory, onStartBuilder }) => (
     </div>
 );
 
-const CartDrawer = ({ cart, isOpen, onClose, onRemoveItem, onCheckout }) => {
-    if (!isOpen) return null;
-    return (
-        <div className="fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm flex justify-end" onClick={() => onClose()}>
-            <div className="w-full max-w-sm bg-white dark:bg-slate-950 h-full p-6 animate-in slide-in-from-right border-l border-slate-200 dark:border-slate-800 shadow-2xl" onClick={e => e.stopPropagation()}>
-                <div className="flex justify-between items-center mb-6"><h2 className="text-xl font-bold text-slate-900 dark:text-white">Сагс ({cart.length})</h2><button onClick={() => onClose()} className="p-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-full"><X size={20}/></button></div>
-                {cart.length === 0 ? (<div className="text-center py-20 text-slate-400 flex flex-col items-center"><ShoppingBag size={48} className="mb-4 opacity-20" /><p>Сагс хоосон байна.</p></div>) : (
-                    <div className="space-y-4">{cart.map((item, i) => (<div key={i} className="flex justify-between items-center border-b border-slate-100 dark:border-slate-800 pb-2"><div><h4 className="font-bold text-slate-900 dark:text-white text-sm">{item.name}</h4><p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{formatCurrency(item.price)}</p></div><button onClick={() => onRemoveItem(i)} className="text-slate-300 hover:text-red-500 p-2"><X size={16}/></button></div>))}<button onClick={onCheckout} className="w-full bg-slate-900 dark:bg-orange-600 text-white py-4 rounded-xl font-bold mt-6 hover:bg-slate-800 dark:hover:bg-orange-700 shadow-lg transition-all">Төлбөр төлөх</button></div>
-                )}
-            </div>
-        </div>
-    );
-};
-
 // --- MAIN APP ---
 export default function App() {
     const [view, setView] = useState('home'); 
-    const [selectedCat, setSelectedCat] = useState(null); // This stores groupId now
+    const [selectedCat, setSelectedCat] = useState(null); 
     const [cart, setCart] = useState([]);
     const [isCartOpen, setIsCartOpen] = useState(false);
     const [darkMode, setDarkMode] = useState(false);
-    const [userRole, setUserRole] = useState('user'); // 'user', 'seller', 'admin'
+    const [userRole, setUserRole] = useState('user'); 
+    const [isSellerLoggedIn, setIsSellerLoggedIn] = useState(false);
+
+    // CENTRALIZED DATA STATE: Lifted up so both SellerDashboard and User views access the same data
+    const [allProducts, setAllProducts] = useState(
+        Object.entries(INITIAL_SUPPLIERS).flatMap(([type, items]) => 
+            items.map(item => ({ ...item, type }))
+        )
+    );
     
     // Builder State
     const [builderDims, setBuilderDims] = useState({ l: 8, w: 6 });
@@ -860,11 +1013,14 @@ export default function App() {
         window.scrollTo(0, 0);
     };
 
-    // NEW FUNCTION
     const handleCheckout = () => {
         alert('Захиалга амжилттай илгээгдлээ! Бид тантай удахгүй холбогдох болно.');
         setCart([]);
         setIsCartOpen(false);
+    };
+
+    const handleSellerLogin = () => {
+        setIsSellerLoggedIn(true);
     };
 
     return (
@@ -874,8 +1030,11 @@ export default function App() {
                 
                 <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 min-h-[calc(100vh-300px)]">
                     {userRole === 'seller' ? (
-                        // 3.2 SELLER DASHBOARD VIEW
-                        <SellerDashboard />
+                        isSellerLoggedIn ? (
+                            <SellerDashboard allProducts={allProducts} setAllProducts={setAllProducts} />
+                        ) : (
+                            <SellerLogin onLogin={handleSellerLogin} />
+                        )
                     ) : (
                         // USER VIEWS
                         <>
@@ -883,7 +1042,7 @@ export default function App() {
                             {view === 'builder' && <VisualBuilderView onBack={() => setView('home')} initialDims={builderDims} initialFloors={builderFloors} initialShape={builderShape} />}
                             
                             {/* Pass 'groupId' as 'categoryId' prop since we changed logic */}
-                            {view === 'category' && <CategoryDetail categoryId={selectedCat} groupId={selectedCat} onBack={() => setView('home')} onAddToCart={handleAddToCart} />}
+                            {view === 'category' && <CategoryDetail categoryId={selectedCat} groupId={selectedCat} onBack={() => setView('home')} onAddToCart={handleAddToCart} allProducts={allProducts} />}
                             
                             {view === 'services' && <ServicesDashboard onNavigate={setView} />}
                             {view === 'china' && <ChinaImportScreen onBack={() => handleNav('services')} />}
