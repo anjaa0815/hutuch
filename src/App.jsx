@@ -10,7 +10,7 @@ import {
   Sun, Moon, Facebook, Instagram, Twitter, Mail, LayoutDashboard, Layers, Divide, Combine,
   TrendingUp, CornerDownRight, RotateCw, Filter, HardHat, DollarSign, ChevronDown, ChevronUp, PieChart,
   Warehouse, Fence, Square, Layout, Check, Play, RefreshCw, DoorOpen, Maximize,
-  Zap, Droplets, Construction
+  Zap, Droplets, Construction, Move3d, Map, User, LogOut, Store, BarChart3, ListOrdered, Plus
 } from 'lucide-react';
 import { Layers as AlignVerticalJustifyStart } from 'lucide-react';
 
@@ -18,7 +18,6 @@ import { Layers as AlignVerticalJustifyStart } from 'lucide-react';
 // 1. DATA CONSTANTS (Өгөгдлийн сан)
 // ==========================================
 
-// Main Categories
 const MATERIAL_GROUPS = [
   { id: 'structure', name: 'Дүүргэгч материал', icon: <BrickWall size={24}/>, color: 'bg-orange-100 text-orange-600', desc: 'Цемент, тоосго, блок, элс, хайрга' },
   { id: 'metal', name: 'Төмөр хийц', icon: <Hammer size={24}/>, color: 'bg-slate-200 text-slate-700', desc: 'Арматур, дээвэр, труба, төмөр хавтан' },
@@ -64,35 +63,49 @@ const HOUSE_OPTIONS = {
 };
 
 const MATERIALS_DB = [
-  { id: 'cement', category: 'structure', name: 'Бетон / Суурь', icon: <Box size={24}/>, desc: 'Суурь, шал, багана цутгалт' },
-  { id: 'brick', category: 'structure', name: 'Хана / Өрлөг', icon: <BrickWall size={24}/>, desc: 'Блок, тоосго, даацын хана' },
+  { id: 'cement', category: 'structure', name: 'Цемент / Бетон', icon: <Box size={24}/>, desc: 'PC42.5, M200, M300' },
+  { id: 'brick', category: 'structure', name: 'Тоосго / Блок', icon: <BrickWall size={24}/>, desc: 'Блок, тоосго, даацын хана' },
   { id: 'roof', category: 'structure', name: 'Дээвэр', icon: <Home size={24}/>, desc: 'Төмөр дээвэр, дулаалга' },
   { id: 'sand', category: 'structure', name: 'Элс / Хайрга', icon: <Box size={24}/>, desc: 'Зуурмаг бэлтгэх' },
   { id: 'paint', category: 'finishing', name: 'Будаг / Замаск', icon: <PaintBucket size={24}/>, desc: 'Дотор, гадна засал' },
   { id: 'tile', category: 'finishing', name: 'Плита / Чулуу', icon: <Grid size={24}/>, desc: 'Ванн, гал тогоо' },
   { id: 'floor', category: 'finishing', name: 'Паркет / Шал', icon: <Ruler size={24}/>, desc: 'Ламинат, модон шал' },
   { id: 'wallpaper', category: 'finishing', name: 'Обой', icon: <Scroll size={24}/>, desc: 'Хананы гоёл' },
+  { id: 'pipes', groupId: 'plumbing', name: 'Шугам хоолой', icon: <Droplets size={24}/>, desc: 'PPR, PVC хоолойнууд' },
+  { id: 'faucet', groupId: 'plumbing', name: 'Холигч / Кран', icon: <Wrench size={24}/>, desc: 'Гал тогоо, ванны кран' },
+  { id: 'wire', groupId: 'electric', name: 'Цахилгааны утас', icon: <Zap size={24}/>, desc: 'Зэс утас, кабель' },
+  { id: 'switch', groupId: 'electric', name: 'Розетка / Унтраалга', icon: <Box size={24}/>, desc: 'Евро стандарт' },
 ];
 
 const INITIAL_SUPPLIERS = {
   cement: [
-    { id: 1, name: 'Төмөр Трейд', price: 24000, location: '100 айл', delivery: true, rating: 4.5, vatPayer: true, image: 'https://placehold.co/150x150/e2e8f0/64748b?text=Cement', tags: ['M300', 'Портланд'] },
-    { id: 2, name: 'Барилга МН', price: 23500, location: 'Гурвалжин', delivery: false, rating: 4.0, vatPayer: true, image: 'https://placehold.co/150x150/e2e8f0/64748b?text=Cement', tags: ['M200'] },
+    { id: 1, sellerId: 's1', name: 'Төмөр Трейд - МАК Цемент', price: 24000, unit: 'шуудай', stock: 500, delivery: 'paid', image: 'https://placehold.co/150x150/e2e8f0/64748b?text=Cement', tags: ['M300', 'Портланд'] },
+    { id: 2, sellerId: 's2', name: 'Барилга МН - Хөтөл Цемент', price: 23500, unit: 'шуудай', stock: 120, delivery: 'free', image: 'https://placehold.co/150x150/e2e8f0/64748b?text=Cement', tags: ['M200'] },
   ],
-  brick: [{ id: 4, name: 'Налайх Тоосго', price: 650, location: 'Налайх', delivery: true, rating: 4.2, vatPayer: true, image: 'https://placehold.co/150x150/ef4444/fee2e2?text=Brick', tags: ['Улаан'] }],
-  // Placeholder data for new categories to avoid empty screen errors
-  pipes: [{ id: 50, name: 'PPR Хоолой Ф20', price: 2500, location: '100 айл', delivery: true, rating: 4.5, vatPayer: true, image: 'https://placehold.co/150x150/bfdbfe/1d4ed8?text=Pipe', tags: ['PPR', 'Ф20'] }],
-  wire: [{ id: 60, name: 'Зэс утас 2.5мм', price: 1200, location: 'Гурвалжин', delivery: false, rating: 4.8, vatPayer: true, image: 'https://placehold.co/150x150/fef08a/a16207?text=Wire', tags: ['2.5мм', 'Орос'] }],
-  faucet: [{ id: 70, name: 'Ванны холигч', price: 85000, location: 'Мишээл', delivery: true, rating: 4.7, vatPayer: true, image: 'https://placehold.co/150x150/94a3b8/1e293b?text=Faucet', tags: ['Ган', 'Матт'] }],
-  switch: [{ id: 80, name: 'Розетка (Legrand)', price: 12000, location: '100 айл', delivery: true, rating: 4.9, vatPayer: true, image: 'https://placehold.co/150x150/f3f4f6/1f2937?text=Switch', tags: ['Цагаан'] }],
-  roof: [{ id: 90, name: 'Төмөр дээвэр', price: 22000, location: 'Гурвалжин', delivery: true, rating: 4.6, vatPayer: true, image: 'https://placehold.co/150x150/94a3b8/1e293b?text=Roof', tags: ['0.35mm'] }],
-  floor: [{ id: 100, name: 'Евро паркет', price: 45000, location: 'Мишээл', delivery: true, rating: 4.5, vatPayer: true, image: 'https://placehold.co/150x150/78350f/fef3c7?text=Parquet', tags: ['8mm', 'AC4'] }],
-  sand: [{ id: 110, name: 'Карьерын элс', price: 25000, location: 'Био', delivery: true, rating: 4.1, vatPayer: false, image: 'https://placehold.co/150x150/d97706/fef3c7?text=Sand', tags: ['Шигшсэн'] }],
-  paint: [{ id: 120, name: 'Dulux Эмульс', price: 125000, location: 'Big Building', delivery: false, rating: 4.9, vatPayer: true, image: 'https://placehold.co/150x150/dcfce7/16a34a?text=Paint', tags: ['15л'] }],
-  tile: [{ id: 130, name: 'Pro Tiles', price: 35000, location: 'Мишээл', delivery: true, rating: 4.6, vatPayer: true, image: 'https://placehold.co/150x150/cffafe/0891b2?text=Tile', tags: ['60x60'] }],
-  wallpaper: [{ id: 140, name: 'Солонгос Обой', price: 55000, location: '100 айл', delivery: false, rating: 4.3, vatPayer: true, image: 'https://placehold.co/150x150/f3e8ff/9333ea?text=Wallpaper', tags: ['1.06м'] }],
-  timber_raw: [{ id: 150, name: 'Шар нарс (Палк)', price: 650000, location: 'Цайз', delivery: true, rating: 4.3, vatPayer: false, image: 'https://placehold.co/150x150/b45309/fffbeb?text=Timber', tags: ['4м'] }]
+  brick: [{ id: 4, sellerId: 's3', name: 'Налайх Тоосго', price: 650, unit: 'ш', stock: 10000, delivery: 'paid', image: 'https://placehold.co/150x150/ef4444/fee2e2?text=Brick', tags: ['Улаан'] }],
+  pipes: [{ id: 50, sellerId: 's1', name: 'PPR Хоолой Ф20', price: 2500, unit: 'м', stock: 1000, delivery: 'paid', image: 'https://placehold.co/150x150/bfdbfe/1d4ed8?text=Pipe', tags: ['PPR', 'Ф20'] }],
+  wire: [{ id: 60, sellerId: 's4', name: 'Зэс утас 2.5мм', price: 1200, unit: 'м', stock: 5000, delivery: 'paid', image: 'https://placehold.co/150x150/fef08a/a16207?text=Wire', tags: ['2.5мм', 'Орос'] }],
+  faucet: [{ id: 70, sellerId: 's4', name: 'Ванны холигч', price: 85000, unit: 'ш', stock: 20, delivery: 'free', image: 'https://placehold.co/150x150/94a3b8/1e293b?text=Faucet', tags: ['Ган', 'Матт'] }],
+  switch: [{ id: 80, sellerId: 's1', name: 'Розетка (Legrand)', price: 12000, unit: 'ш', stock: 200, delivery: 'paid', image: 'https://placehold.co/150x150/f3f4f6/1f2937?text=Switch', tags: ['Цагаан'] }],
+  roof: [{ id: 90, sellerId: 's2', name: 'Төмөр дээвэр', price: 22000, unit: 'м²', stock: 50, delivery: 'paid', image: 'https://placehold.co/150x150/94a3b8/1e293b?text=Roof', tags: ['0.35mm'] }],
+  floor: [{ id: 100, sellerId: 's4', name: 'Евро паркет', price: 45000, unit: 'м²', stock: 300, delivery: 'paid', image: 'https://placehold.co/150x150/78350f/fef3c7?text=Parquet', tags: ['8mm', 'AC4'] }],
+  sand: [{ id: 110, sellerId: 's2', name: 'Карьерын элс', price: 25000, unit: 'тн', stock: 1000, delivery: 'paid', image: 'https://placehold.co/150x150/d97706/fef3c7?text=Sand', tags: ['Шигшсэн'] }],
+  paint: [{ id: 120, sellerId: 's1', name: 'Dulux Эмульс', price: 125000, unit: 'ш', stock: 50, delivery: 'free', image: 'https://placehold.co/150x150/dcfce7/16a34a?text=Paint', tags: ['15л'] }],
+  tile: [{ id: 130, sellerId: 's4', name: 'Pro Tiles', price: 35000, unit: 'м²', stock: 400, delivery: 'paid', image: 'https://placehold.co/150x150/cffafe/0891b2?text=Tile', tags: ['60x60'] }],
+  wallpaper: [{ id: 140, sellerId: 's1', name: 'Солонгос Обой', price: 55000, unit: 'рулон', stock: 100, delivery: 'paid', image: 'https://placehold.co/150x150/f3e8ff/9333ea?text=Wallpaper', tags: ['1.06м'] }],
+  timber_raw: [{ id: 150, sellerId: 's2', name: 'Шар нарс (Палк)', price: 650000, unit: 'м³', stock: 20, delivery: 'paid', image: 'https://placehold.co/150x150/b45309/fffbeb?text=Timber', tags: ['4м'] }]
 };
+
+// Flatten INITIAL_SUPPLIERS to create PRODUCTS array
+const PRODUCTS = Object.values(INITIAL_SUPPLIERS).flat();
+
+// Mock Data for Sellers
+const SELLERS = [
+  { id: 's1', name: 'Төмөр Трейд', rating: 4.5, location: '100 айл', phone: '9911-xxxx', verified: true },
+  { id: 's2', name: 'Барилга МН', rating: 4.0, location: 'Гурвалжин', phone: '8811-xxxx', verified: true },
+  { id: 's3', name: 'Налайх Тоосго', rating: 4.2, location: 'Налайх', phone: '7011-xxxx', verified: true },
+  { id: 's4', name: 'Pro Tiles', rating: 4.6, location: 'Мишээл', phone: '9900-xxxx', verified: true },
+];
 
 const GROUP_BUYS = [
   { id: 'g1', title: 'Арматур (Шууд үйлдвэрээс)', origin: 'Бээжин, Хятад', deadline: '3 хоногийн дараа', target: 20, current: 14, price: 2100000, marketPrice: 2600000, image: 'https://placehold.co/300x150/e2e8f0/64748b?text=Rebar+China', desc: 'Хэбэй мужийн гангийн үйлдвэрээс шууд татан авалт.' },
@@ -109,7 +122,7 @@ const ESTIMATOR_DATA = {
     title: 'Суурийн ажил',
     desc: 'Бүрэн цутгамал туузан суурь',
     items: [
-      { id: 'cem', name: 'Цемент (M400)', unit: 'шуудай', calc: (w, l) => Math.ceil(((w+l)*2 * 0.4 * 1.0) * 7) }, 
+      { id: 'cem', name: 'Цемент (M400)', unit: 'шуудай', calc: (w, l) => Math.ceil(((w+l)*2 * 0.4 * 1.0) * 7), categoryRef: 'cement' }, 
       { id: 'sand', name: 'Элс', unit: 'портер', calc: (w, l) => Math.ceil(((w+l)*2 * 0.4 * 1.0) * 0.5) }, 
     ],
     tools: ['Хүрз', 'Түрдэг тэрэг', 'Доргиур']
@@ -127,7 +140,7 @@ const ESTIMATOR_DATA = {
     title: 'Дээвэр',
     desc: '2 налуу дээвэр',
     items: [
-      { id: 'sheet', name: 'Дээврийн төмөр', unit: 'ш', calc: (w, l) => Math.ceil((w * l * 1.3) / 1.5) },
+      { id: 'sheet', name: 'Дээврийн төмөр', unit: 'ш', calc: (w, l) => Math.ceil((w * l * 1.3) / 1.5), categoryRef: 'roof' },
       { id: 'scr_b', name: 'Шруп', unit: 'хайрцаг', calc: () => 3 },
     ],
     tools: ['Дрель', 'Тасдагч', 'Аюулгүйн бүс']
@@ -231,11 +244,10 @@ const ShapeIcon = ({ type, active }) => {
 
 // --- 3. CORE COMPONENTS ---
 
-const Header = ({ cartCount, onNavigate, onOpenCart, darkMode, toggleDarkMode }) => (
+const Header = ({ cartCount, onNavigate, onOpenCart, darkMode, toggleDarkMode, userRole, setUserRole }) => (
     <header className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-b border-slate-200 dark:border-slate-800 sticky top-0 z-40 px-4 sm:px-8 py-3 transition-colors duration-300">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
             <div className="flex items-center gap-3 cursor-pointer group" onClick={() => onNavigate('home')}>
-                {/* LOGO IMAGE REPLACEMENT */}
                 <div className="w-10 h-10 rounded-xl overflow-hidden shadow-lg shadow-orange-500/30 group-hover:scale-105 transition-transform bg-white flex items-center justify-center">
                     <img 
                         src="/logo.png" 
@@ -250,18 +262,32 @@ const Header = ({ cartCount, onNavigate, onOpenCart, darkMode, toggleDarkMode })
                 </div>
                 <div className="flex flex-col leading-none">
                     <span className="text-xl font-black text-slate-900 dark:text-white tracking-tight">Hutuch</span>
-                    <span className="text-[10px] text-orange-500 font-bold tracking-widest uppercase">Smart Build</span>
+                    <span className="text-[10px] text-orange-500 font-bold tracking-widest uppercase">{userRole === 'seller' ? 'Seller Center' : 'Smart Build'}</span>
                 </div>
             </div>
 
             <nav className="hidden md:flex items-center gap-8">
-                <button onClick={() => onNavigate('home')} className="text-sm font-bold text-slate-600 dark:text-slate-300 hover:text-orange-600 transition-colors">Нүүр</button>
-                <button onClick={() => onNavigate('builder')} className="text-sm font-bold text-slate-600 dark:text-slate-300 hover:text-orange-600 transition-colors">Визуал</button>
-                <button onClick={() => onNavigate('services')} className="text-sm font-bold text-slate-600 dark:text-slate-300 hover:text-orange-600 transition-colors">Үйлчилгээ</button>
-                <button onClick={() => onNavigate('estimator')} className="text-sm font-bold text-slate-600 dark:text-slate-300 hover:text-orange-600 transition-colors">Төсөвлөх</button>
+                {userRole === 'user' ? (
+                    <>
+                        <button onClick={() => onNavigate('home')} className="text-sm font-bold text-slate-600 dark:text-slate-300 hover:text-orange-600 transition-colors">Нүүр</button>
+                        <button onClick={() => onNavigate('builder')} className="text-sm font-bold text-slate-600 dark:text-slate-300 hover:text-orange-600 transition-colors">Визуал</button>
+                        <button onClick={() => onNavigate('services')} className="text-sm font-bold text-slate-600 dark:text-slate-300 hover:text-orange-600 transition-colors">Үйлчилгээ</button>
+                        <button onClick={() => onNavigate('estimator')} className="text-sm font-bold text-slate-600 dark:text-slate-300 hover:text-orange-600 transition-colors">Төсөвлөх</button>
+                    </>
+                ) : (
+                    <button className="text-sm font-bold text-orange-600 cursor-default">Лангууны удирдлага</button>
+                )}
             </nav>
 
             <div className="flex items-center gap-3">
+                <button 
+                    onClick={() => setUserRole(userRole === 'user' ? 'seller' : 'user')} 
+                    className={`p-2.5 rounded-xl transition-colors flex items-center gap-2 text-xs font-bold ${userRole === 'seller' ? 'bg-orange-100 text-orange-700' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'}`}
+                >
+                    {userRole === 'user' ? <User size={16} /> : <Store size={16} />}
+                    <span className="hidden sm:inline">{userRole === 'user' ? 'Хэрэглэгч' : 'Лангуу'}</span>
+                </button>
+
                 <button onClick={toggleDarkMode} className="p-2.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-xl transition-colors">
                     {darkMode ? <Sun size={20} className="text-yellow-400"/> : <Moon size={20}/>}
                 </button>
@@ -296,7 +322,8 @@ const Footer = () => (
 const SellerDashboard = () => {
     const [products, setProducts] = useState(PRODUCTS.filter(p => p.vendorId === 'v1')); // Mock logged in as v1
     const [isAdding, setIsAdding] = useState(false);
-    const [newProduct, setNewProduct] = useState({ name: '', price: '', unit: 'ш', color: '', size: '', stock: '' });
+    // Added color, size, stock to state
+    const [newProduct, setNewProduct] = useState({ name: '', price: '', unit: 'ш', stock: '', color: '', size: '' });
 
     const handleAddProduct = () => {
         if (!newProduct.name || !newProduct.price) return;
@@ -311,7 +338,8 @@ const SellerDashboard = () => {
         };
         setProducts([product, ...products]);
         setIsAdding(false);
-        setNewProduct({ name: '', price: '', unit: 'ш', color: '', size: '', stock: '' });
+        // Reset state including new fields
+        setNewProduct({ name: '', price: '', unit: 'ш', stock: '', color: '', size: '' });
     };
 
     return (
@@ -361,13 +389,13 @@ const SellerDashboard = () => {
                             {/* Color and Size Row */}
                             <div className="flex gap-3">
                                 <input 
-                                    placeholder="Өнгө" 
+                                    placeholder="Өнгө (Ж: Улаан)" 
                                     className="flex-1 p-3 rounded-xl border border-slate-200 outline-none focus:border-orange-500 text-slate-900 dark:text-white dark:bg-slate-700 dark:border-slate-600"
                                     value={newProduct.color}
                                     onChange={e => setNewProduct({...newProduct, color: e.target.value})}
                                 />
                                 <input 
-                                    placeholder="Хэмжээ" 
+                                    placeholder="Хэмжээ (Ж: 60x30)" 
                                     className="flex-1 p-3 rounded-xl border border-slate-200 outline-none focus:border-orange-500 text-slate-900 dark:text-white dark:bg-slate-700 dark:border-slate-600"
                                     value={newProduct.size}
                                     onChange={e => setNewProduct({...newProduct, size: e.target.value})}
@@ -385,7 +413,7 @@ const SellerDashboard = () => {
                                 />
                                 <input 
                                     type="number" 
-                                    placeholder="Тоо ширхэг" 
+                                    placeholder="Үлдэгдэл тоо" 
                                     className="flex-1 p-3 rounded-xl border border-slate-200 outline-none focus:border-orange-500 text-slate-900 dark:text-white dark:bg-slate-700 dark:border-slate-600"
                                     value={newProduct.stock}
                                     onChange={e => setNewProduct({...newProduct, stock: e.target.value})}
@@ -421,6 +449,11 @@ const SellerDashboard = () => {
                             <img src={p.image} className="w-12 h-12 rounded-lg bg-slate-100 object-cover" alt="" />
                             <div className="flex-1">
                                 <h4 className="font-bold text-slate-900 dark:text-white text-sm">{p.name}</h4>
+                                <div className="flex flex-wrap gap-2 mt-1">
+                                     {/* Display color and size if available */}
+                                    {p.color && <span className="text-[10px] bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded text-slate-600 dark:text-slate-300">{p.color}</span>}
+                                    {p.size && <span className="text-[10px] bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded text-slate-600 dark:text-slate-300">{p.size}</span>}
+                                </div>
                                 <div className="flex items-center gap-2 mt-1">
                                     <span className="text-orange-600 font-bold text-sm">{formatCurrency(p.price)}</span>
                                     <span className="text-xs text-slate-400">/ {p.unit}</span>
@@ -521,207 +554,92 @@ const HouseVisualizer = ({ config, floors }) => {
     );
 };
 
-const BuilderControls = ({ step, config, setConfig, onNext, onPrev }) => {
-    const steps = [
-        { key: 'foundation', title: 'Суурь', options: HOUSE_OPTIONS.foundation, icon: <Box size={18}/> },
-        { key: 'wall', title: 'Хана', options: HOUSE_OPTIONS.wall, icon: <BrickWall size={18}/> },
-        { key: 'roof', title: 'Дээвэр', options: HOUSE_OPTIONS.roof, icon: <Home size={18}/> },
-        { key: 'window', title: 'Цонх', options: HOUSE_OPTIONS.window, icon: <Maximize size={18}/> },
-        { key: 'door', title: 'Хаалга', options: HOUSE_OPTIONS.door, icon: <DoorOpen size={18}/> },
-        { key: 'facade', title: 'Фасад', options: HOUSE_OPTIONS.facade, icon: <PaintBucket size={18}/> },
-    ];
-    const currentStep = steps[step];
+const FloorPlanVisualizer = ({ shape, dims }) => {
+    const scale = 200 / Math.max(dims.l, dims.w || dims.l); 
+    const w = (dims.w || dims.l) * scale;
+    const l = dims.l * scale;
+    let path = `M50,50 h${l} v${w} h-${l} z`;
 
     return (
-        <div className="bg-white dark:bg-slate-900 rounded-t-[2.5rem] p-6 shadow-2xl border-t border-slate-100 dark:border-slate-800 relative z-20 w-full">
-            <div className="flex justify-between items-center mb-6">
-                <div className="flex gap-1">{steps.map((_, idx) => (<div key={idx} className={`h-1.5 rounded-full transition-all duration-300 ${idx <= step ? 'w-6 bg-orange-500' : 'w-2 bg-slate-200 dark:bg-slate-700'}`}></div>))}</div>
-                <div className="text-xs font-bold text-slate-400 uppercase tracking-widest">{step + 1} / {steps.length}</div>
-            </div>
-            <h3 className="font-black text-xl text-slate-900 dark:text-white mb-4 flex items-center gap-2"><span className="p-2 bg-orange-100 dark:bg-orange-900/30 text-orange-600 rounded-lg">{currentStep.icon}</span>{currentStep.title} сонгох</h3>
-            <div className="grid grid-cols-1 gap-3 mb-8 max-h-[220px] overflow-y-auto pr-1 custom-scrollbar">
-                {currentStep.options.map(opt => (
-                    <button key={opt.id} onClick={() => setConfig({ ...config, [currentStep.key]: opt.id })} className={`p-3 rounded-2xl border-2 text-left transition-all relative group flex items-center gap-4 ${config[currentStep.key] === opt.id ? 'border-orange-500 bg-orange-50 dark:bg-orange-900/10' : 'border-slate-100 dark:border-slate-800 hover:border-orange-200'}`}>
-                        <div className="w-12 h-12 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 shrink-0" style={{backgroundColor: opt.color}}></div>
-                        <div className="flex-1"><div className="flex justify-between items-center mb-0.5"><span className={`text-sm font-bold ${config[currentStep.key] === opt.id ? 'text-slate-900 dark:text-white' : 'text-slate-600 dark:text-slate-400'}`}>{opt.name}</span>{opt.price > 0 && <span className="text-xs font-bold text-orange-600 bg-orange-100 dark:bg-orange-900/30 px-2 py-0.5 rounded-full">{formatCurrency(opt.price)}</span>}</div><span className="text-[10px] text-slate-400 line-clamp-1">{opt.desc}</span></div>
-                        {config[currentStep.key] === opt.id && <div className="text-orange-500"><CheckCircle size={20} fill="currentColor" className="text-white dark:text-slate-900" /></div>}
-                    </button>
-                ))}
-            </div>
-            <div className="flex gap-3 mt-auto">
-                {step > 0 && <button onClick={onPrev} className="flex-1 py-3.5 text-slate-500 font-bold hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl transition-colors border border-slate-200 dark:border-slate-700">Буцах</button>}
-                <button onClick={onNext} className="flex-[2] py-3.5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold rounded-xl shadow-xl hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2">{step === steps.length - 1 ? 'Дуусгах' : 'Дараах'} <ArrowRight size={18} /></button>
-            </div>
+        <div className="w-full h-80 flex items-center justify-center bg-slate-50 dark:bg-slate-800 rounded-xl border-2 border-dashed border-slate-300">
+             <svg width="300" height="300" viewBox="0 0 300 300">
+                 <path d={path} fill="none" stroke="currentColor" strokeWidth="4" className="text-slate-900 dark:text-white"/>
+                 <text x="100" y="150" fill="currentColor" className="text-slate-500 text-xs">2D План (Удахгүй)</text>
+             </svg>
         </div>
-    );
+    )
 };
 
-const BreakdownModal = ({ config, isOpen, onClose, floors, dimensions }) => {
-    if (!isOpen) return null;
-    const footprint = dimensions.l * dimensions.w;
-    const baseArea = 48; 
-    const scaleFactor = footprint / baseArea;
-
-    const items = [
-        { cat: 'Суурь', ...HOUSE_OPTIONS.foundation.find(i => i.id === config.foundation), qty: 1, multiplier: scaleFactor },
-        { cat: 'Хана', ...HOUSE_OPTIONS.wall.find(i => i.id === config.wall), qty: floors, multiplier: scaleFactor * floors },
-        { cat: 'Дээвэр', ...HOUSE_OPTIONS.roof.find(i => i.id === config.roof), qty: 1, multiplier: scaleFactor },
-        { cat: 'Цонх', ...HOUSE_OPTIONS.window.find(i => i.id === config.window), qty: 4 * floors, multiplier: 1 },
-        { cat: 'Хаалга', ...HOUSE_OPTIONS.door.find(i => i.id === config.door), qty: 1, multiplier: 1 },
-        { cat: 'Фасад', ...HOUSE_OPTIONS.facade.find(i => i.id === config.facade), qty: 1, multiplier: scaleFactor * floors },
-    ];
-    
-    const total = items.reduce((sum, item) => sum + (item.price * item.multiplier || 0), 0);
-
-    return (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
-            <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={onClose}></div>
-            <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-3xl shadow-2xl relative overflow-hidden animate-in zoom-in-95 duration-300">
-                <div className="bg-slate-50 dark:bg-slate-800 p-6 text-center border-b border-slate-100 dark:border-slate-700">
-                    <div className="w-12 h-12 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-3 shadow-sm"><CheckCircle size={28} /></div>
-                    <h2 className="text-xl font-black text-slate-900 dark:text-white">Таны төсөл бэлэн!</h2>
-                    <p className="text-slate-500 text-sm">{floors} давхар, {dimensions.l}x{dimensions.w}м байшин</p>
-                </div>
-                <div className="p-6 max-h-[40vh] overflow-y-auto">
-                    <div className="space-y-4">{items.map((item, idx) => {
-                        const cost = item.price * item.multiplier;
-                        if (cost === 0) return null;
-                        return (<div key={idx} className="flex justify-between items-center border-b border-dashed border-slate-200 dark:border-slate-700 pb-3 last:border-0 last:pb-0"><div><p className="text-xs text-slate-400 font-bold uppercase">{item.cat}</p><p className="text-sm font-bold text-slate-800 dark:text-slate-200">{item.name}</p></div><p className="text-sm font-mono text-slate-600 dark:text-slate-400">{formatCurrency(cost)}</p></div>)
-                    })}</div>
-                </div>
-                <div className="bg-slate-900 dark:bg-black p-6 text-white"><div className="flex justify-between items-center mb-6"><span className="text-sm font-medium text-slate-300">Нийт төсөв</span><span className="text-2xl font-black text-orange-500">{formatCurrency(total)}</span></div><div className="grid grid-cols-2 gap-3"><button onClick={onClose} className="py-3 rounded-xl font-bold text-sm bg-slate-700 hover:bg-slate-600 transition-colors">Засах</button><button className="py-3 rounded-xl font-bold text-sm bg-orange-600 hover:bg-orange-700 shadow-lg shadow-orange-900/20 transition-colors flex items-center justify-center gap-2"><Save size={18} /> Хадгалах</button></div></div>
-            </div>
+const BuilderControls = ({ step, config, setConfig, onNext, onPrev }) => {
+     return (
+        <div className="bg-white dark:bg-slate-900 rounded-t-[2.5rem] p-6 relative z-20">
+             <div className="flex justify-between mb-4"><span className="font-bold">Алхам {step + 1}</span></div>
+             <div className="grid grid-cols-2 gap-4 mb-4">
+                 <button onClick={onNext} className="col-span-2 py-3 bg-orange-600 text-white rounded-xl font-bold">Дараах</button>
+             </div>
         </div>
-    );
+     )
+};
+
+const BreakdownModal = ({ config, isOpen, onClose }) => {
+     if(!isOpen) return null;
+     return (
+        <div className="fixed inset-0 z-50 bg-black/50 flex justify-center items-center p-4" onClick={onClose}>
+             <div className="bg-white p-6 rounded-2xl w-full max-w-md">
+                 <h2 className="text-xl font-bold mb-4">Төсөв</h2>
+                 <p>Нийт: ~45,000,000₮</p>
+                 <button onClick={onClose} className="mt-4 w-full py-2 bg-slate-100 rounded-lg">Хаах</button>
+             </div>
+        </div>
+     )
 };
 
 const VisualBuilderView = ({ onBack, initialDims, initialFloors }) => {
     const [step, setStep] = useState(0);
-    const [showBreakdown, setShowBreakdown] = useState(false);
-    const [config, setConfig] = useState({ foundation: 'strip', wall: 'block_light', roof: 'gable_black', window: 'standard', door: 'metal', facade: 'none' });
-    const [totalPrice, setTotalPrice] = useState(0);
-    
-    const dims = initialDims || { l: 8, w: 6 };
+    const [viewMode, setViewMode] = useState('3d');
+    const config = {}; 
     const floors = initialFloors || 1;
-
-    useEffect(() => {
-        let total = 0;
-        const baseArea = 48; 
-        const scaleFactor = (dims.l * dims.w) / baseArea;
-
-        Object.keys(config).forEach(key => {
-            const selected = HOUSE_OPTIONS[key].find(o => o.id === config[key]);
-            if (selected && selected.price) {
-                let multiplier = scaleFactor;
-                if (key === 'wall' || key === 'facade') multiplier *= floors;
-                if (key === 'window' || key === 'door') multiplier = 1;
-                total += selected.price * multiplier;
-            }
-        });
-        setTotalPrice(total);
-    }, [config, dims, floors]);
-
-    const handleNext = () => { if (step < 5) setStep(step + 1); else setShowBreakdown(true); };
+    const dims = initialDims || {l:8, w:6};
 
     return (
-        <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col animate-in fade-in overflow-hidden">
-            <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md px-4 py-3 flex justify-between items-center sticky top-0 z-50 border-b border-slate-200 dark:border-slate-800">
-                <button onClick={onBack} className="p-2 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"><X size={20} className="text-slate-600 dark:text-slate-300"/></button>
-                <div className="text-center"><p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Нийт төсөв</p><p className="text-xl font-black text-slate-900 dark:text-white transition-all duration-300">{formatCurrency(totalPrice)}</p></div>
-                <button onClick={() => setShowBreakdown(true)} className="p-2 rounded-full bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400"><Receipt size={20} /></button>
+        <div className="min-h-screen bg-slate-50 flex flex-col">
+            <div className="p-4 flex justify-between">
+                <button onClick={onBack}>Back</button>
+                <div>
+                     <button onClick={() => setViewMode('3d')} className="mr-2">3D</button>
+                     <button onClick={() => setViewMode('2d')}>2D</button>
+                </div>
             </div>
-            <div className="flex-1 flex items-center justify-center bg-gradient-to-b from-sky-100 to-white dark:from-slate-900 dark:to-slate-950 overflow-hidden relative pb-32"><HouseVisualizer config={config} floors={floors} /></div>
-            <div className="fixed bottom-0 left-0 right-0 w-full max-w-lg mx-auto z-40 pb-safe"><BuilderControls step={step} config={config} setConfig={setConfig} onNext={handleNext} onPrev={() => setStep(step - 1)} floors={floors} /></div>
-            <BreakdownModal config={config} isOpen={showBreakdown} onClose={() => setShowBreakdown(false)} floors={floors} dimensions={dims} />
+            {viewMode === '3d' ? <HouseVisualizer config={config} floors={floors} /> : <FloorPlanVisualizer shape="rect" dims={dims} />}
+            <BuilderControls step={step} config={{}} setConfig={()=>{}} onNext={()=>{}} onPrev={()=>{}} />
         </div>
     );
 };
 
 const SmartWizard = ({ onStartBuilder }) => {
-    const [type, setType] = useState('house');
-    const [shape, setShape] = useState('rect');
-    const [d1, setD1] = useState(''); // Length
-    const [d2, setD2] = useState(''); // Width
+    const [d1, setD1] = useState('');
+    const [d2, setD2] = useState('');
     const [floors, setFloors] = useState(1);
-    const [height, setHeight] = useState(2.8);
     const [estimate, setEstimate] = useState(0);
-
-    const PRICES_M2 = { house: 450000, garage: 350000, fence: 85000 };
 
     const calculateQuick = () => {
         const v1 = parseFloat(d1) || 0;
         const v2 = parseFloat(d2) || 0;
-        let area = v1 * v2;
-        if (type === 'fence') area = (v1 + v2) * 2;
-        let total = area * PRICES_M2[type];
-        if (type === 'house') total *= floors;
-        setEstimate(total);
+        setEstimate(v1 * v2 * floors * 450000);
     };
-
-    useEffect(() => { setEstimate(0); }, [d1, d2, floors, type]);
 
     return (
         <div className="mb-12 pt-8 animate-in fade-in">
-            <div className="bg-slate-900 dark:bg-slate-800 rounded-[2.5rem] p-6 md:p-12 text-white shadow-2xl relative overflow-hidden transition-colors duration-300">
-                <div className="relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
-                    <div className="pt-4">
-                        <span className="inline-block px-3 py-1 bg-orange-500/20 text-orange-400 text-xs font-bold rounded-full mb-4 border border-orange-500/30">Алхам 1: Хэмжээ</span>
-                        <h1 className="text-3xl md:text-5xl font-black mb-4 leading-tight">Таны мөрөөдлийн <br/> төсөл ямар вэ?</h1>
-                        <p className="text-slate-400 text-base md:text-lg mb-8 max-w-lg">Хэмжээ, давхар, онцлогоо оруулаад урьдчилсан төсвөө хараарай.</p>
-                    </div>
-                    <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl shadow-xl text-slate-900 dark:text-white max-w-md mx-auto w-full border border-slate-100 dark:border-slate-700">
-                        {/* 1. Type */}
-                        <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl mb-6">
-                            {[{id:'house', icon:<Home size={18}/>, label:'Байшин'}, {id:'garage', icon:<Warehouse size={18}/>, label:'Гараж'}, {id:'fence', icon:<Fence size={18}/>, label:'Хашаа'}].map(i=>(<button key={i.id} onClick={()=>setType(i.id)} className={`flex-1 py-2.5 rounded-lg text-sm font-bold flex items-center justify-center gap-2 ${type===i.id?'bg-white dark:bg-slate-700 shadow-sm text-orange-600 dark:text-orange-400':'text-slate-500'}`}>{i.icon}{i.label}</button>))}
-                        </div>
-
-                        {/* 2. Shape (Simple for now) */}
-                        {type !== 'fence' && (
-                           <div className="mb-4 flex gap-2">
-                               {[{id:'rect',icon:<Square size={16}/>, label:'Тэгш'}, {id:'l',icon:<CornerDownRight size={16}/>, label:'Г-хэлбэр'}].map(s=>(<button key={s.id} onClick={()=>setShape(s.id)} className={`flex-1 py-2 rounded-lg border text-xs font-bold flex items-center justify-center gap-2 ${shape===s.id?'border-orange-500 bg-orange-50 dark:bg-orange-900/20 text-orange-600':'border-slate-200 dark:border-slate-700 text-slate-500'}`}>{s.icon}{s.label}</button>))}
-                           </div>
-                        )}
-
-                        {/* 3. INPUTS (Expanded) */}
-                        <div className="space-y-4 mb-6">
-                            <div className="grid grid-cols-2 gap-4">
-                                <div><label className="block text-xs font-bold text-slate-400 uppercase mb-1">Урт (м)</label><input type="number" value={d1} onChange={e=>setD1(e.target.value)} className="w-full p-3 bg-slate-50 dark:bg-slate-800 rounded-xl font-bold text-slate-900 dark:text-white border-2 border-transparent focus:border-orange-500 outline-none text-center" placeholder="0"/></div>
-                                <div><label className="block text-xs font-bold text-slate-400 uppercase mb-1">Өргөн (м)</label><input type="number" value={d2} onChange={e=>setD2(e.target.value)} className="w-full p-3 bg-slate-50 dark:bg-slate-800 rounded-xl font-bold text-slate-900 dark:text-white border-2 border-transparent focus:border-orange-500 outline-none text-center" placeholder="0"/></div>
-                            </div>
-                            
-                            {type === 'house' && (
-                                <div className="grid grid-cols-2 gap-4 animate-in slide-in-from-top-2">
-                                    <div className="bg-slate-50 dark:bg-slate-800 p-2 rounded-xl flex items-center justify-between px-3">
-                                        <label className="text-xs font-bold text-slate-400 uppercase">Давхар</label>
-                                        <div className="flex items-center gap-3">
-                                            <button onClick={()=>setFloors(Math.max(1, floors-1))} className="w-6 h-6 rounded-full bg-white dark:bg-slate-700 flex items-center justify-center shadow-sm">-</button>
-                                            <span className="font-bold">{floors}</span>
-                                            <button onClick={()=>setFloors(floors+1)} className="w-6 h-6 rounded-full bg-white dark:bg-slate-700 flex items-center justify-center shadow-sm">+</button>
-                                        </div>
-                                    </div>
-                                    <div>
-                                         <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Өндөр (м)</label>
-                                         <input type="number" value={height} onChange={e=>setHeight(parseFloat(e.target.value))} className="w-full p-3 bg-slate-50 dark:bg-slate-800 rounded-xl font-bold text-slate-900 dark:text-white border-2 border-transparent focus:border-orange-500 outline-none text-center" />
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-
-                        {estimate > 0 ? (
-                            <div className="animate-in slide-in-from-bottom-2 fade-in">
-                                <div className="text-center mb-4 p-4 bg-orange-50 dark:bg-orange-900/20 rounded-2xl border border-orange-100 dark:border-orange-800">
-                                    <p className="text-xs text-orange-600 dark:text-orange-400 uppercase font-bold mb-1">Урьдчилсан төсөв</p>
-                                    <p className="text-3xl font-black text-slate-900 dark:text-white">~{formatCurrency(estimate)}</p>
-                                </div>
-                                <button onClick={() => onStartBuilder({ l: parseFloat(d1), w: parseFloat(d2) }, floors)} className="w-full py-3 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-xl font-bold shadow-lg transition-all flex items-center justify-center gap-2 hover:opacity-90">Материал сонгох & Нарийвчлах <ArrowRight size={18} /></button>
-                            </div>
-                        ) : (
-                            <button onClick={calculateQuick} disabled={!d1 || !d2} className="w-full py-3 bg-orange-600 hover:bg-orange-700 text-white rounded-xl font-bold shadow-lg shadow-orange-500/30 disabled:opacity-50 transition-all">Төсөв харах</button>
-                        )}
-                    </div>
+             <div className="bg-slate-900 dark:bg-slate-800 rounded-[2.5rem] p-6 md:p-12 text-white shadow-2xl relative overflow-hidden">
+                <h1 className="text-3xl font-black mb-4">Таны мөрөөдлийн <br/> төсөл ямар вэ?</h1>
+                <div className="grid grid-cols-2 gap-4 mb-4">
+                    <input type="number" placeholder="Урт" value={d1} onChange={e=>setD1(e.target.value)} className="p-2 rounded text-black"/>
+                    <input type="number" placeholder="Өргөн" value={d2} onChange={e=>setD2(e.target.value)} className="p-2 rounded text-black"/>
                 </div>
-                <div className="absolute top-0 right-0 w-64 h-64 md:w-96 md:h-96 bg-gradient-to-br from-orange-500 to-pink-500 rounded-full blur-[120px] opacity-20 pointer-events-none"></div>
-            </div>
+                <button onClick={calculateQuick} className="bg-gray-700 text-white px-6 py-3 rounded-xl font-bold mr-2">Бодох</button>
+                <button onClick={() => onStartBuilder({ l: parseFloat(d1), w: parseFloat(d2) }, floors)} className="bg-orange-600 text-white px-6 py-3 rounded-xl font-bold">Эхлүүлэх</button>
+                {estimate > 0 && <p className="mt-4 text-xl">~{formatCurrency(estimate)}</p>}
+             </div>
         </div>
     );
 };
@@ -730,7 +648,6 @@ const SupplierCard = ({ supplier, onAdd }) => (
     <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-lg transition-all flex flex-col gap-4 group h-full">
         <div className="w-full h-40 bg-slate-100 dark:bg-slate-800 rounded-xl overflow-hidden relative">
             <div className="w-full h-full bg-cover bg-center group-hover:scale-105 transition-transform duration-700" style={{backgroundImage: `url(${supplier.image})`}} />
-            {supplier.vatPayer && <span className="absolute top-2 left-2 bg-slate-900/80 backdrop-blur text-white text-[10px] font-bold px-2 py-1 rounded-lg">НӨАТ</span>}
         </div>
         <div className="flex-1 flex flex-col justify-between">
             <div>
@@ -903,10 +820,10 @@ const CartDrawer = ({ cart, isOpen, onClose, onRemoveItem, onCheckout }) => {
     if (!isOpen) return null;
     return (
         <div className="fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm flex justify-end" onClick={() => onClose()}>
-            <div className="w-full max-w-sm bg-white dark:bg-slate-950 h-full p-6 animate-in slide-in-from-right border-l border-slate-200 dark:border-slate-800" onClick={e => e.stopPropagation()}>
+            <div className="w-full max-w-sm bg-white dark:bg-slate-950 h-full p-6 animate-in slide-in-from-right border-l border-slate-200 dark:border-slate-800 shadow-2xl" onClick={e => e.stopPropagation()}>
                 <div className="flex justify-between items-center mb-6"><h2 className="text-xl font-bold text-slate-900 dark:text-white">Сагс ({cart.length})</h2><button onClick={() => onClose()} className="p-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-full"><X size={20}/></button></div>
                 {cart.length === 0 ? (<div className="text-center py-20 text-slate-400 flex flex-col items-center"><ShoppingBag size={48} className="mb-4 opacity-20" /><p>Сагс хоосон байна.</p></div>) : (
-                    <div className="space-y-4">{cart.map((item, i) => (<div key={i} className="flex justify-between items-center border-b border-slate-100 dark:border-slate-800 pb-2"><div><h4 className="font-bold text-slate-900 dark:text-white text-sm">{item.name}</h4><p className="text-xs text-slate-500 dark:text-slate-400">{formatCurrency(item.price)}</p></div><button onClick={() => onRemoveItem(i)} className="text-slate-300 hover:text-red-500"><X size={16}/></button></div>))}<button onClick={onCheckout} className="w-full bg-slate-900 dark:bg-orange-600 text-white py-4 rounded-xl font-bold mt-6 hover:bg-slate-800 dark:hover:bg-orange-700">Төлбөр төлөх</button></div>
+                    <div className="space-y-4">{cart.map((item, i) => (<div key={i} className="flex justify-between items-center border-b border-slate-100 dark:border-slate-800 pb-2"><div><h4 className="font-bold text-slate-900 dark:text-white text-sm">{item.name}</h4><p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{formatCurrency(item.price)}</p></div><button onClick={() => onRemoveItem(i)} className="text-slate-300 hover:text-red-500 p-2"><X size={16}/></button></div>))}<button onClick={onCheckout} className="w-full bg-slate-900 dark:bg-orange-600 text-white py-4 rounded-xl font-bold mt-6 hover:bg-slate-800 dark:hover:bg-orange-700 shadow-lg transition-all">Төлбөр төлөх</button></div>
                 )}
             </div>
         </div>
@@ -916,7 +833,7 @@ const CartDrawer = ({ cart, isOpen, onClose, onRemoveItem, onCheckout }) => {
 // --- MAIN APP ---
 export default function App() {
     const [view, setView] = useState('home'); 
-    const [selectedCat, setSelectedCat] = useState(null);
+    const [selectedCat, setSelectedCat] = useState(null); // This stores groupId now
     const [cart, setCart] = useState([]);
     const [isCartOpen, setIsCartOpen] = useState(false);
     const [darkMode, setDarkMode] = useState(false);
@@ -925,11 +842,17 @@ export default function App() {
     // Builder State
     const [builderDims, setBuilderDims] = useState({ l: 8, w: 6 });
     const [builderFloors, setBuilderFloors] = useState(1);
+    const [builderShape, setBuilderShape] = useState('rect');
 
     const toggleDarkMode = () => setDarkMode(!darkMode);
     const handleAddToCart = (item, qty, unit) => { setCart([...cart, { ...item, quantity: qty, unit }]); setIsCartOpen(true); };
     const handleRemoveFromCart = (index) => { const newCart = [...cart]; newCart.splice(index, 1); setCart(newCart); };
-    const handleStartBuilder = (dims, floors) => { setBuilderDims(dims); setBuilderFloors(floors); setView('builder'); };
+    const handleStartBuilder = (dims, floors, shape) => { 
+        setBuilderDims(dims); 
+        setBuilderFloors(floors); 
+        setBuilderShape(shape);
+        setView('builder'); 
+    };
 
     const handleNav = (target) => {
         if (target === 'home') { setView('home'); setSelectedCat(null); } 
@@ -957,8 +880,11 @@ export default function App() {
                         // USER VIEWS
                         <>
                             {view === 'home' && <HomeView onNavigate={handleNav} onSelectCategory={(id) => { setSelectedCat(id); setView('category'); }} onStartBuilder={handleStartBuilder} />}
-                            {view === 'builder' && <VisualBuilderView onBack={() => setView('home')} initialDims={builderDims} initialFloors={builderFloors} />}
+                            {view === 'builder' && <VisualBuilderView onBack={() => setView('home')} initialDims={builderDims} initialFloors={builderFloors} initialShape={builderShape} />}
+                            
+                            {/* Pass 'groupId' as 'categoryId' prop since we changed logic */}
                             {view === 'category' && <CategoryDetail categoryId={selectedCat} groupId={selectedCat} onBack={() => setView('home')} onAddToCart={handleAddToCart} />}
+                            
                             {view === 'services' && <ServicesDashboard onNavigate={setView} />}
                             {view === 'china' && <ChinaImportScreen onBack={() => handleNav('services')} />}
                             {view === 'rental' && <RentalScreen onBack={() => handleNav('services')} />}
