@@ -1,4 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { initializeApp } from 'firebase/app';
+import { getAuth, signInAnonymously } from 'firebase/auth';
+import { getFirestore } from 'firebase/firestore';
 import { 
   Calculator, BrickWall, PaintBucket, Ruler, Info, 
   Menu, X, Grid, Cylinder, Box, Scroll, Coins, 
@@ -14,6 +17,12 @@ import {
   Bell, Lock, Smartphone, Printer, Download, Sofa, Bed, Lamp, Armchair, Briefcase, Factory, MessageSquare, ShieldCheck,
   Send, FileInput, Undo, Redo, ZoomIn, ZoomOut, MousePointer2, Eraser, Flame, Snowflake, Shield, Settings, Navigation
 } from 'lucide-react';
+
+// --- Firebase Stub (For Compilation) ---
+const firebaseConfig = JSON.parse(__firebase_config);
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
 
 // ==========================================
 // 1. DATA CONSTANTS & LOGIC
@@ -117,16 +126,19 @@ const CALC_ENGINE = {
         const wallHeight = 2.8;
         const totalWallArea = perimeter * wallHeight * floors;
         
+        // Foundation
         const foundVol = (perimeter * 0.5 * 1.5).toFixed(1); 
         const cementQty = Math.ceil(foundVol * CALC_ENGINE.norms.cement.perM3);
         const sandQty = Math.ceil(foundVol * CALC_ENGINE.norms.sand.perM3);
         const foundCost = (cementQty * CALC_ENGINE.norms.cement.price) + (sandQty * CALC_ENGINE.norms.sand.price);
 
-        const wallType = config.wall.includes('brick') ? 'brick' : 'block';
+        // Walls
+        const wallType = config?.wall?.includes('brick') ? 'brick' : 'block';
         const wallNorm = CALC_ENGINE.norms[wallType];
         const wallCount = Math.ceil(totalWallArea * wallNorm.perM2 * (1 + wallNorm.waste));
         const wallCost = wallCount * wallNorm.price * (scenario === 'premium' ? 1.5 : 1);
 
+        // Roof
         const roofArea = area * 1.3;
         const roofCount = Math.ceil(roofArea);
         const roofCost = roofCount * CALC_ENGINE.norms.roof_sheet.price * (scenario === 'economy' ? 1 : 1.8);
@@ -151,67 +163,7 @@ const CALC_ENGINE = {
             ]
         };
     },
-
-    mapToRFQItems: (rawDetails) => {
-        return rawDetails || [];
-    }
 };
-
-const HOUSE_OPTIONS = {
-  foundation: [
-    { id: 'strip', name: 'Туузан суурь', price: 12000000, color: '#64748b', type: 'solid', unit: 'багц', desc: 'Бат бөх, найдвартай' }, 
-    { id: 'pile', name: 'Баганан суурь', price: 6500000, color: '#94a3b8', type: 'dots', unit: 'багц', desc: 'Зардал бага, хөнгөн' },
-    { id: 'slab', name: 'Хавтан суурь', price: 15000000, color: '#475569', type: 'solid', unit: 'багц', desc: 'Намгархаг хөрсөнд' }, 
-    { id: 'basement', name: 'Зоорьтой суурь', price: 28000000, color: '#334155', type: 'solid', unit: 'багц', desc: 'Агуулах, гаражтай' },
-  ],
-  wall: [
-    { id: 'block_light', name: 'Хөнгөн блок', price: 12500000, color: '#e2e8f0', pattern: 'block', unit: 'багц', desc: 'Дулаан алдагдал бага' }, 
-    { id: 'brick_red', name: 'Улаан тоосго', price: 18000000, color: '#ef4444', pattern: 'brick', unit: 'багц', desc: 'Уламжлалт, бат бөх' },
-    { id: 'brick_black', name: 'Хар тоосго', price: 20000000, color: '#1e293b', pattern: 'brick', unit: 'багц', desc: 'Модерн загвар' },
-    { id: 'timber', name: 'Дүнзэн (Мод)', price: 35000000, color: '#d97706', pattern: 'wood', unit: 'багц', desc: 'Эко, дулаан' },
-    { id: 'concrete', name: 'Цутгамал бетон', price: 28000000, color: '#94a3b8', pattern: 'plain', unit: 'багц', desc: 'Маш бат бөх' },
-  ],
-  roof: [
-    { id: 'gable_red', name: 'Төмөр (Улаан)', price: 6500000, color: '#b91c1c', type: 'gable', unit: 'багц', desc: 'Энгийн хийц' }, 
-    { id: 'gable_black', name: 'Битамон (Хар)', price: 9500000, color: '#1e293b', type: 'gable', unit: 'багц', desc: 'Дуу чимээ бага' },
-    { id: 'hip_green', name: 'Майхан (Ногоон)', price: 8500000, color: '#15803d', type: 'hip', unit: 'багц', desc: 'Салхинд тэсвэртэй' },
-    { id: 'flat', name: 'Хавтгай', price: 12000000, color: '#475569', type: 'flat', unit: 'багц', desc: 'Террас хийх боломжтой' },
-    { id: 'shed', name: 'Нэг налуу (Хар)', price: 5500000, color: '#0f172a', type: 'shed', unit: 'багц', desc: 'Модерн, энгийн' },
-  ],
-  window: [
-    { id: 'standard', name: 'Стандарт', price: 350000, type: 'std', unit: 'ш', desc: '2 давхар шил' }, 
-    { id: 'triple', name: '3 давхар шил', price: 550000, type: 'std', unit: 'ш', desc: 'Дулаан алдагдал бага' },
-    { id: 'panoramic', name: 'Панорама', price: 850000, type: 'pano', unit: 'ш', desc: 'Шалнаас тааз хүртэл' },
-    { id: 'arched', name: 'Тал дугуй', price: 650000, type: 'arch', unit: 'ш', desc: 'Сонгодог загвар' },
-  ],
-  door: [
-    { id: 'metal', name: 'Бүргэд', price: 650000, color: '#7f1d1d', type: 'std', unit: 'ш', desc: 'ОХУ стандарт' }, 
-    { id: 'smart', name: 'Ухаалаг (Хар)', price: 1200000, color: '#171717', type: 'std', unit: 'ш', desc: 'Код, хурууны хээ' },
-    { id: 'white', name: 'Цагаан', price: 550000, color: '#f1f5f9', type: 'std', unit: 'ш', desc: 'Модерн' },
-    { id: 'glass', name: 'Шилэн', price: 1500000, color: '#94a3b8', type: 'glass', unit: 'ш', desc: 'Оффис, дэлгүүр' },
-  ],
-  facade: [
-    { id: 'none', name: 'Өнгөлгөөгүй', price: 0, color: 'transparent', pattern: 'none', unit: 'багц', desc: 'Үндсэн хана' },
-    { id: 'stucco', name: 'Чулуун замаск', price: 2500000, color: '#f5f5f4', pattern: 'noise', unit: 'багц', desc: 'Гоёлын шавардлага' },
-    { id: 'siding', name: 'Сайдинг', price: 3500000, color: '#cbd5e1', pattern: 'lines', unit: 'багц', desc: 'Металл өнгөлгөө' },
-    { id: 'brick_veneer', name: 'Өнгөлгөөний тоосго', price: 5500000, color: '#b91c1c', pattern: 'brick', unit: 'багц', desc: 'Тансаг харагдац' },
-  ]
-};
-
-const MATERIALS_DB = [
-  { id: 'cement', category: 'structure', name: 'Цемент / Бетон', icon: <Box size={24}/>, desc: 'PC42.5, M200, M300' },
-  { id: 'brick', category: 'structure', name: 'Тоосго / Блок', icon: <BrickWall size={24}/>, desc: 'Блок, тоосго, даацын хана' },
-  { id: 'roof', category: 'structure', name: 'Дээвэр', icon: <Home size={24}/>, desc: 'Төмөр дээвэр, дулаалга' },
-  { id: 'sand', category: 'structure', name: 'Элс / Хайрга', icon: <Box size={24}/>, desc: 'Зуурмаг бэлтгэх' },
-  { id: 'paint', category: 'finishing', name: 'Будаг / Замаск', icon: <PaintBucket size={24}/>, desc: 'Дотор, гадна засал' },
-  { id: 'tile', category: 'finishing', name: 'Плита / Чулуу', icon: <Grid size={24}/>, desc: 'Ванн, гал тогоо' },
-  { id: 'floor', category: 'finishing', name: 'Паркет / Шал', icon: <Ruler size={24}/>, desc: 'Ламинат, модон шал' },
-  { id: 'wallpaper', category: 'finishing', name: 'Обой', icon: <Scroll size={24}/>, desc: 'Хананы гоёл' },
-  { id: 'pipes', groupId: 'plumbing', name: 'Шугам хоолой', icon: <Droplets size={24}/>, desc: 'PPR, PVC хоолойнууд' },
-  { id: 'faucet', groupId: 'plumbing', name: 'Холигч / Кран', icon: <Wrench size={24}/>, desc: 'Гал тогоо, ванны кран' },
-  { id: 'wire', groupId: 'electric', name: 'Цахилгааны утас', icon: <Zap size={24}/>, desc: 'Зэс утас, кабель' },
-  { id: 'switch', groupId: 'electric', name: 'Розетка / Унтраалга', icon: <Box size={24}/>, desc: 'Евро стандарт' },
-];
 
 const INITIAL_SUPPLIERS = {
   cement: [
@@ -289,8 +241,16 @@ const Header = ({ cartCount, onNavigate, onOpenCart, darkMode, toggleDarkMode, u
     <header className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-b border-slate-200 dark:border-slate-800 sticky top-0 z-40 px-4 sm:px-8 py-3 transition-colors duration-300">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
             <div className="flex items-center gap-3 cursor-pointer group" onClick={() => onNavigate('home')}>
-                <div className="w-10 h-10 rounded-xl overflow-hidden shadow-lg bg-white flex items-center justify-center">
-                    <img src="/logo.png" alt="Hutuch" className="w-full h-full object-contain" onError={(e) => {e.target.style.display = 'none'; e.target.parentElement.innerHTML = '🏗️';}} />
+                <div className="w-10 h-10 rounded-xl overflow-hidden shadow-lg bg-white flex items-center justify-center border border-slate-200">
+                    <img 
+                        src="logo.png" 
+                        alt="Hutuch Logo" 
+                        className="w-full h-full object-contain p-1"
+                        onError={(e) => {
+                            e.target.onerror = null;
+                            e.target.src = 'https://placehold.co/100x100/orange/white?text=H'; // Fallback
+                        }}
+                    />
                 </div>
                 <div className="flex flex-col leading-none">
                     <span className="text-xl font-black text-slate-900 dark:text-white tracking-tight">Hutuch</span>
@@ -331,7 +291,16 @@ const Footer = () => (
             <div className="flex flex-col md:flex-row justify-between items-center gap-6">
                 <div>
                     <h3 className="font-bold text-slate-900 dark:text-white text-lg flex items-center gap-2 justify-center md:justify-start">
-                         <img src="/logo.png" alt="Hutuch" className="w-6 h-6 object-contain" onError={(e) => {e.target.onerror = null; e.target.src='https://placehold.co/24x24?text=H';}} /> Hutuch
+                         <img 
+                            src="logo.png" 
+                            alt="Hutuch" 
+                            className="w-6 h-6 object-contain"
+                            onError={(e) => {
+                                e.target.onerror = null;
+                                e.target.src = 'https://placehold.co/50x50/orange/white?text=H';
+                            }}
+                         />
+                         Hutuch
                     </h3>
                     <p className="text-slate-500 text-sm mt-2">Барилгын ухаалаг туслах.</p>
                 </div>
@@ -348,6 +317,8 @@ const SellerLogin = ({ onLogin }) => {
     const [password, setPassword] = useState('');
     const [isRegistering, setIsRegistering] = useState(false);
     const [shopName, setShopName] = useState('');
+    
+    // Updated State for Registration
     const [location, setLocation] = useState('100 айл'); 
     const [tradeCenter, setTradeCenter] = useState(''); 
     const [shopNumber, setShopNumber] = useState('');   
@@ -378,8 +349,8 @@ const SellerLogin = ({ onLogin }) => {
         <div className="min-h-[60vh] flex items-center justify-center px-4 animate-in fade-in">
             <div className="bg-white dark:bg-slate-900 p-8 rounded-3xl shadow-xl w-full max-w-md border border-slate-100 dark:border-slate-800">
                 <div className="text-center mb-8">
-                    <div className="bg-orange-100 dark:bg-orange-900/30 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 text-orange-600 dark:text-orange-400">
-                        <Store size={32} />
+                    <div className="w-20 h-20 bg-white rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg border border-slate-100 p-2 overflow-hidden">
+                        <img src="logo.png" alt="Hutuch Logo" className="w-full h-full object-contain" />
                     </div>
                     <h2 className="text-2xl font-black text-slate-900 dark:text-white">
                         {isRegistering ? 'Шинэ борлуулагч бүртгэх' : 'Борлуулагч нэвтрэх'}
@@ -786,7 +757,6 @@ const CartDrawer = ({ cart, isOpen, onClose, onCheckout }) => {
                             <div>
                                 <h4 className="font-bold text-slate-900 dark:text-white text-sm line-clamp-1">{item.name}</h4><p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{item.quantity} {item.unit} x {formatCurrency(item.price)}</p>
                             </div>
-                            <button className="text-slate-300 hover:text-red-500 p-2"><X size={16}/></button>
                         </div>
                     ))}
                     
@@ -798,17 +768,10 @@ const CartDrawer = ({ cart, isOpen, onClose, onCheckout }) => {
                             {DISTRICTS.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
                         </select>
                         {district && (
-                            <div className="space-y-2">
-                                <div className="flex gap-2">
-                                    {DELIVERY_SLOTS.map(s => (
-                                        <button key={s.id} onClick={()=>setSlot(s.id)} className={`flex-1 py-1 text-[10px] border rounded ${slot===s.id?'bg-slate-900 text-white':''}`}>{s.label}</button>
-                                    ))}
-                                </div>
-                                <div className="flex justify-between text-sm pt-2 border-t border-dashed">
-                                    <span>Хүргэлт ({delivery.isAggregated ? 'Нэгдсэн' : 'Энгийн'})</span>
+                             <div className="flex justify-between text-sm pt-2 border-t border-dashed">
+                                    <span>Хүргэлт</span>
                                     <span className="font-bold">{formatCurrency(delivery.total)}</span>
-                                </div>
-                            </div>
+                             </div>
                         )}
                     </div>
                 </div>
@@ -825,30 +788,122 @@ const CartDrawer = ({ cart, isOpen, onClose, onCheckout }) => {
     );
 };
 
-const QuickCalculator = ({ typeId, typeName, inputs, onCalculate }) => {
-    const [val1, setVal1] = useState(0); const [val2, setVal2] = useState(0); const [val3, setVal3] = useState(0);
-    const handleCalc = () => {
-        let quantity = 0, unit = '';
-        if (typeId === 'pile_foundation') { const vol = val1 * Math.PI * Math.pow(val2 / 2, 2) * val3; quantity = Math.ceil(vol * 7); unit = 'шуудай цемент'; } 
-        else if (typeId === 'square_pile_foundation') { const vol = val1 * val2 * val2 * val3; quantity = Math.ceil(vol * 7); unit = 'шуудай цемент'; } 
-        else if (typeId.includes('brick') || typeId.includes('block')) { const area = val1 * val2; quantity = Math.ceil(area * 104); unit = 'ш'; }
-        else { quantity = Math.ceil(val1 * val2); unit = 'нэгж'; }
-        onCalculate(quantity, unit);
+// --- VISUAL BUILDER VIEW (Restored) ---
+const VisualBuilderView = ({ onBack, template }) => {
+    const [dims, setDims] = useState(template?.dims || { l: 8, w: 6 });
+    const [floors, setFloors] = useState(template?.floors || 1);
+    const [config, setConfig] = useState({ wall: 'block_light', roof: 'gable_red' });
+    const [result, setResult] = useState(null);
+
+    const calculate = () => {
+        const res = CALC_ENGINE.calculateProject(dims, floors, config, 'standard');
+        setResult(res);
     };
+
     return (
-        <div className="bg-slate-50 dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 mt-4 transition-all">
-            <h4 className="font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2"><Calculator size={18}/> {typeName} тооцоолох</h4>
-            <div className="grid grid-cols-2 gap-4 mb-4">
-                {inputs.includes('length') && <InputField label="Урт (м)" value={val1} onChange={setVal1} />}
-                {inputs.includes('width') && <InputField label="Өргөн (м)" value={val2} onChange={setVal2} />}
-                {inputs.includes('height') && <InputField label="Өндөр (м)" value={val3} onChange={setVal3} />}
-                {inputs.includes('count') && <InputField label="Тоо" value={val1} onChange={setVal1} />}
-                {inputs.includes('diameter') && <InputField label="Диаметр" value={val2} onChange={setVal2} />}
+        <div className="animate-in fade-in py-8">
+            <div className="flex items-center gap-4 mb-6">
+                 <button onClick={onBack} className="p-2 bg-white rounded-lg border hover:bg-slate-50"><ArrowLeft size={20}/></button>
+                 <h2 className="text-2xl font-bold">Барилгын төлөвлөгч</h2>
             </div>
-            <button onClick={handleCalc} className="w-full py-3 bg-indigo-600 dark:bg-orange-600 text-white rounded-xl font-bold">Тооцох</button>
+            
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div className="space-y-6 bg-white p-6 rounded-3xl shadow-sm border border-slate-200">
+                    <div>
+                        <h3 className="font-bold mb-4">1. Хэмжээ (м)</h3>
+                        <div className="grid grid-cols-2 gap-4">
+                            <InputField label="Урт" value={dims.l} onChange={(v) => setDims({...dims, l: v})} />
+                            <InputField label="Өргөн" value={dims.w} onChange={(v) => setDims({...dims, w: v})} />
+                            <InputField label="Давхар" value={floors} onChange={setFloors} />
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <h3 className="font-bold mb-4">2. Материал</h3>
+                        <div className="space-y-4">
+                            <div>
+                                <label className="text-sm text-slate-500 mb-1 block">Хана</label>
+                                <select 
+                                    className="w-full p-3 rounded-xl border bg-slate-50"
+                                    value={config.wall}
+                                    onChange={(e) => setConfig({...config, wall: e.target.value})}
+                                >
+                                    <option value="block_light">Хөнгөн блок</option>
+                                    <option value="brick_red">Улаан тоосго</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button onClick={calculate} className="w-full py-4 bg-slate-900 text-white font-bold rounded-xl shadow-lg">Тооцоолох</button>
+                </div>
+
+                {result && (
+                    <div className="bg-slate-900 text-white p-8 rounded-3xl shadow-2xl animate-in slide-in-from-right">
+                        <h3 className="text-xl font-bold mb-6 text-orange-400">Тооцооллын үр дүн</h3>
+                        <div className="text-4xl font-black mb-8">{formatCurrency(result.totalCost)}</div>
+                        
+                        <div className="space-y-4 mb-8">
+                            {result.details.map((d, i) => (
+                                <div key={i} className="flex justify-between items-center border-b border-slate-700 pb-3">
+                                    <div>
+                                        <div className="text-sm font-bold text-slate-300">{d.category}</div>
+                                        <div className="text-xs text-slate-500">{d.material}</div>
+                                    </div>
+                                    <div className="text-right">
+                                        <div className="font-bold">{d.qty} {d.unit}</div>
+                                        <div className="text-xs text-orange-400">{formatCurrency(d.price)}</div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                        
+                        <button className="w-full py-3 bg-orange-600 rounded-xl font-bold">Үнийн санал авах (RFQ)</button>
+                    </div>
+                )}
+            </div>
         </div>
     );
 };
+
+// --- RFQ MANAGER (Restored) ---
+const RFQManager = ({ rfqs, onBack }) => (
+    <div className="animate-in fade-in py-8">
+         <div className="flex items-center gap-4 mb-6">
+                 <button onClick={onBack} className="p-2 bg-white rounded-lg border hover:bg-slate-50"><ArrowLeft size={20}/></button>
+                 <h2 className="text-2xl font-bold">Таны үнийн саналууд</h2>
+         </div>
+         
+         {rfqs.length === 0 ? (
+             <div className="text-center py-20 bg-white rounded-3xl border border-dashed">
+                 <FileText size={48} className="mx-auto text-slate-300 mb-4" />
+                 <p className="text-slate-500">Одоогоор үнийн санал алга байна.</p>
+             </div>
+         ) : (
+             <div className="space-y-4">
+                 {rfqs.map(rfq => (
+                     <div key={rfq.id} className="bg-white p-6 rounded-2xl border shadow-sm">
+                         <div className="flex justify-between items-start mb-4">
+                             <div>
+                                 <h3 className="font-bold text-lg">RFQ #{rfq.id}</h3>
+                                 <p className="text-slate-500 text-sm">{new Date(rfq.date).toLocaleDateString()}</p>
+                             </div>
+                             <span className="px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs font-bold">Хүлээгдэж буй</span>
+                         </div>
+                         <div className="space-y-2">
+                             {rfq.items.map((item, idx) => (
+                                 <div key={idx} className="flex justify-between text-sm">
+                                     <span>{item.material}</span>
+                                     <span className="text-slate-500">{item.qty} {item.unit}</span>
+                                 </div>
+                             ))}
+                         </div>
+                     </div>
+                 ))}
+             </div>
+         )}
+    </div>
+);
 
 const Estimator = ({ onBack }) => {
     return (
@@ -871,7 +926,9 @@ const HomeView = ({ onNavigate, onSelectCategory, onStartTemplate }) => (
                 <h1 className="text-3xl sm:text-4xl font-black mb-3 leading-tight">Юу барих гэж байна?</h1>
                 <p className="text-slate-400 text-sm mb-8">Бид зөвхөн материал зардаггүй. Бид таны төсөв, дулаан алдагдал, ирээдүйн зардлыг тооцоолж өгнө.</p>
             </div>
-            <div className="absolute right-0 bottom-0 opacity-20 pointer-events-none"><Construction size={250} /></div>
+            <div className="absolute right-[-20px] bottom-[-20px] opacity-10 pointer-events-none grayscale">
+                <img src="logo.png" alt="Background" className="w-64 h-64 object-contain" />
+            </div>
         </div>
         
         <div className="px-2 mb-10">
@@ -910,16 +967,28 @@ const HomeView = ({ onNavigate, onSelectCategory, onStartTemplate }) => (
 // --- MAIN APP ---
 export default function App() {
     const [view, setView] = useState('home'); 
-    const [selectedCat, setSelectedCat] = useState(null); // This stores groupId now
+    const [selectedCat, setSelectedCat] = useState(null); 
     const [cart, setCart] = useState([]);
     const [isCartOpen, setIsCartOpen] = useState(false);
     const [darkMode, setDarkMode] = useState(false);
-    const [userRole, setUserRole] = useState('user'); // 'user', 'seller', 'admin'
+    const [userRole, setUserRole] = useState('user'); // 'user', 'seller'
     const [isSellerLoggedIn, setIsSellerLoggedIn] = useState(false);
     const [rfqs, setRfqs] = useState([]);
     const [initialTemplate, setInitialTemplate] = useState(null);
 
     const [allProducts, setAllProducts] = useState(Object.values(INITIAL_SUPPLIERS).flat());
+
+    // Auth Init
+    useEffect(() => {
+        const initAuth = async () => {
+            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                // Handle custom token if needed
+            } else {
+                await signInAnonymously(auth);
+            }
+        };
+        initAuth();
+    }, []);
 
     const toggleDarkMode = () => setDarkMode(!darkMode);
     const handleAddToCart = (item, qty, unit) => { setCart([...cart, { ...item, quantity: qty, unit }]); setIsCartOpen(true); };
@@ -928,12 +997,6 @@ export default function App() {
     const handleStartTemplate = (tpl) => { 
         setInitialTemplate(tpl); 
         setView('builder'); 
-    };
-
-    const handleSaveEstimateAsRFQ = (data) => {
-        setRfqs([{ id: Date.now().toString().slice(-4), date: new Date().toISOString(), items: data.details || [] }, ...rfqs]);
-        alert("RFQ Sent!"); 
-        setView('rfq');
     };
 
     const handleNav = (target) => {
@@ -958,7 +1021,7 @@ export default function App() {
                 
                 <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 min-h-[calc(100vh-300px)]">
                     {userRole === 'seller' ? (
-                        // 3.2 SELLER DASHBOARD VIEW
+                        // SELLER DASHBOARD VIEW
                         isSellerLoggedIn ? 
                         <SellerDashboard allProducts={allProducts} setAllProducts={setAllProducts} rfqs={rfqs} /> 
                         : 
@@ -967,7 +1030,7 @@ export default function App() {
                         // USER VIEWS
                         <>
                             {view === 'home' && <HomeView onNavigate={handleNav} onSelectCategory={(id) => { setSelectedCat(id); setView('category'); }} onStartTemplate={handleStartTemplate} />}
-                            {view === 'builder' && <VisualBuilderView onBack={() => setView('home')} initialDims={builderDims} initialFloors={builderFloors} />}
+                            {view === 'builder' && <VisualBuilderView onBack={() => setView('home')} template={initialTemplate} />}
                             {view === 'rfq' && <RFQManager rfqs={rfqs} onBack={() => setView('home')} />}
                             {view === 'category' && <CategoryDetail categoryId={selectedCat} groupId={selectedCat} onBack={() => setView('home')} onAddToCart={handleAddToCart} allProducts={allProducts} />}
                             
