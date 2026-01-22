@@ -15,7 +15,8 @@ import {
   Warehouse, Fence, Square, Layout, Check, Play, RefreshCw, DoorOpen, Maximize,
   Zap, Droplets, Construction, Move3d, Map, User, LogOut, Store, BarChart3, ListOrdered, Plus,
   Bell, Lock, Smartphone, Printer, Download, Sofa, Bed, Lamp, Armchair, Briefcase, Factory, MessageSquare, ShieldCheck,
-  Send, FileInput, Undo, Redo, ZoomIn, ZoomOut, MousePointer2, Eraser, Flame, Snowflake, Shield, Settings, Navigation
+  Send, FileInput, Undo, Redo, ZoomIn, ZoomOut, MousePointer2, Eraser, Flame, Snowflake, Shield, Settings, Navigation,
+  ThumbsUp, MessageCircle, HelpCircle
 } from 'lucide-react';
 
 // --- Firebase Stub (For Compilation) ---
@@ -101,66 +102,140 @@ const MATERIAL_GROUPS = [
   { id: 'finishing', name: 'Засал чимэглэл', icon: <PaintBucket size={24}/>, color: 'bg-pink-100 text-pink-600', desc: 'Будаг, обой, плита, замаск' },
 ];
 
+// --- FOUNDATION TYPES ---
+const FOUNDATION_TYPES = [
+    { id: 'strip', name: 'Туузан суурь', desc: 'Даацын хананд тохиромжтой', icon: <Layers size={20}/>, multiplier: 1.0 },
+    { id: 'pad', name: 'Баганан суурь', desc: 'Каркасан барилгад', icon: <Grid size={20}/>, multiplier: 0.7 },
+    { id: 'raft', name: 'Хавтан суурь', desc: 'Сул хөрстэй газар', icon: <Square size={20}/>, multiplier: 1.5 },
+];
+
+const WALL_TYPES = [
+    { id: 'block', name: 'Хөнгөн блок', price: 4200, unit: 'ш', desc: '60x30x20 стандарт', waste: 0.05, perM2: 12.5, calcType: 'piece' },
+    { id: 'mak', name: 'МАК Евро блок', price: 11500, unit: 'ш', desc: '60x40x25 дулаан', waste: 0.03, perM2: 6.6, calcType: 'piece' },
+    { id: 'brick', name: 'Улаан тоосго', price: 680, unit: 'ш', desc: '36-ын хана (давхар)', waste: 0.05, perM2: 104, calcType: 'piece' },
+    { id: 'timber', name: 'Дүнз (Орос)', price: 850000, unit: 'м3', desc: '25см диаметртэй нарс', waste: 0.1, thickness: 0.25, calcType: 'volume' },
+    { id: 'concrete', name: 'Цутгамал бетон', price: 280000, unit: 'м3', desc: 'М300 бетон, 20см', waste: 0.05, thickness: 0.20, calcType: 'volume' },
+];
+
+const ROOF_TYPES = [
+    { id: 'flat', name: 'Хавтгай (Flat)', multiplier: 1.02, priceM2: 65000, desc: 'Орчин үеийн, террас хийх боломжтой', waste: 0.05 },
+    { id: 'gable', name: 'Энгийн үзүүрт (Gable)', multiplier: 1.35, priceM2: 45000, desc: 'Хамгийн түгээмэл, цас унахдаа сайн', waste: 0.1 },
+    { id: 'hip', name: 'Дөрвөн талт (Hip)', multiplier: 1.45, priceM2: 55000, desc: 'Салхинд тэсвэртэй, бат бөх', waste: 0.15 },
+    { id: 'mansard', name: 'Мансард (Mansard)', multiplier: 1.8, priceM2: 75000, desc: 'Доороо өрөө гаргах боломжтой', waste: 0.2 },
+    { id: 'shed', name: 'Нэг налуу (Shed)', multiplier: 1.2, priceM2: 40000, desc: 'Энгийн хийц, гараж болон амбаарт тохиромжтой', waste: 0.08 },
+    { id: 'butterfly', name: 'Эрвээхэй (Butterfly)', multiplier: 1.4, priceM2: 95000, desc: 'Өвөрмөц дизайн, ус цуглуулах боломжтой', waste: 0.15 },
+    { id: 'pyramid', name: 'Пирамид (Pyramid)', multiplier: 1.5, priceM2: 60000, desc: 'Квадрат суурьтай барилгад тохиромжтой', waste: 0.15 },
+    { id: 'skillion', name: 'Скиллион (Skillion)', multiplier: 1.25, priceM2: 48000, desc: 'Модерн загвар', waste: 0.1 },
+];
+
 const CALC_ENGINE = {
     norms: {
-      block: { unit: 'ш', perM2: 12.5, waste: 0.05, price: 4000, insulation: 0.5 },
-      brick: { unit: 'ш', perM2: 52, waste: 0.05, price: 650, insulation: 0.8 },   
       cement: { unit: 'кг', perM3: 350, waste: 0.0, price: 250 }, 
       sand: { unit: 'тн', perM3: 1.6, waste: 0.05, price: 25000 },
-      rebar: { unit: 'кг', perM3: 60, waste: 0.05, price: 2800 }, 
-      roof_sheet: { unit: 'м2', waste: 0.15, price: 22000, lifetime: 15 },
-      roof_tile: { unit: 'м2', waste: 0.1, price: 45000, lifetime: 30 },
+      // Interior Norms
+      paint: { unit: 'л', perM2: 0.25, price: 18000, desc: '2 давхар' },
+      wallpaper: { unit: 'рулон', width: 1.06, length: 10, price: 65000, pattern: 0 },
+      parquet: { unit: 'м2', waste: 0.05, price: 45000 },
+      tile: { unit: 'м2', waste: 0.1, price: 35000 },
     },
     
-    scenarios: {
-        economy: { multiplier: 1, label: 'Хэмнэлттэй', color: 'bg-green-100 text-green-700' },
-        standard: { multiplier: 1.4, label: 'Стандарт', color: 'bg-blue-100 text-blue-700' },
-        premium: { multiplier: 2.2, label: 'Тансаг', color: 'bg-purple-100 text-purple-700' }
-    },
-  
-    calculateProject: (dims, floors, config, scenario = 'standard') => {
-        const sMultiplier = CALC_ENGINE.scenarios[scenario].multiplier;
-        
+    calculateProject: (dims, floors, config) => {
         const perimeter = (dims.l + dims.w) * 2;
-        const area = dims.l * dims.w;
+        const floorArea = dims.l * dims.w;
         const wallHeight = 2.8;
-        const totalWallArea = perimeter * wallHeight * floors;
+        const grossWallArea = perimeter * wallHeight * floors;
+        const netWallArea = grossWallArea * 0.85; 
         
-        // Foundation
-        const foundVol = (perimeter * 0.5 * 1.5).toFixed(1); 
-        const cementQty = Math.ceil(foundVol * CALC_ENGINE.norms.cement.perM3);
-        const sandQty = Math.ceil(foundVol * CALC_ENGINE.norms.sand.perM3);
-        const foundCost = (cementQty * CALC_ENGINE.norms.cement.price) + (sandQty * CALC_ENGINE.norms.sand.price);
+        let details = [];
+        let totalCost = 0;
 
-        // Walls
-        const wallType = config?.wall?.includes('brick') ? 'brick' : 'block';
-        const wallNorm = CALC_ENGINE.norms[wallType];
-        const wallCount = Math.ceil(totalWallArea * wallNorm.perM2 * (1 + wallNorm.waste));
-        const wallCost = wallCount * wallNorm.price * (scenario === 'premium' ? 1.5 : 1);
+        // --- 1. Structure ---
+        
+        // Foundation Calculation Logic
+        let foundVol = 0;
+        const selectedFound = FOUNDATION_TYPES.find(f => f.id === config.foundation) || FOUNDATION_TYPES[0];
+
+        if (config.foundation === 'raft') {
+             // Хавтан суурь: Бүх талбайгаар * 30см зузаан
+             foundVol = floorArea * 0.3;
+        } else if (config.foundation === 'pad') {
+             // Баганан суурь: Ойролцоогоор 3м тутамд 1 багана гэж тооцъё
+             const pads = Math.ceil(perimeter / 3) + Math.ceil(floorArea / 15); // Периметр + дунд багана
+             foundVol = pads * (0.8 * 0.8 * 1.5); // 80x80см хэмжээтэй 1.5м гүн
+        } else {
+             // Туузан суурь (Default): Периметр * 50см өргөн * 1.5м гүн
+             foundVol = perimeter * 0.5 * 1.5;
+        }
+
+        const cementQty = Math.ceil(foundVol * CALC_ENGINE.norms.cement.perM3);
+        const foundCost = cementQty * CALC_ENGINE.norms.cement.price;
+        
+        details.push({ 
+            category: 'Карказ', 
+            material: `${selectedFound.name}`, 
+            qty: cementQty, 
+            unit: 'кг (Цемент)', 
+            price: foundCost,
+            note: `Тооцсон эзлэхүүн: ${foundVol.toFixed(1)} м³`
+        });
+
+        // Wall
+        const selectedWall = WALL_TYPES.find(w => w.id === config.wall) || WALL_TYPES[0];
+        let wallQty = 0;
+        let wallCost = 0;
+
+        if (selectedWall.calcType === 'piece') {
+            wallQty = Math.ceil(grossWallArea * selectedWall.perM2 * (1 + selectedWall.waste));
+            wallCost = wallQty * selectedWall.price;
+        } else if (selectedWall.calcType === 'volume') {
+            wallQty = Math.ceil(grossWallArea * selectedWall.thickness * (1 + selectedWall.waste));
+            wallCost = wallQty * selectedWall.price;
+        }
+        
+        details.push({ category: 'Карказ', material: selectedWall.name, qty: wallQty, unit: selectedWall.unit, price: wallCost });
 
         // Roof
-        const roofArea = area * 1.3;
-        const roofCount = Math.ceil(roofArea);
-        const roofCost = roofCount * CALC_ENGINE.norms.roof_sheet.price * (scenario === 'economy' ? 1 : 1.8);
+        const selectedRoof = ROOF_TYPES.find(r => r.id === config.roof) || ROOF_TYPES[1];
+        const roofRealArea = Math.ceil(floorArea * selectedRoof.multiplier * 1.2); 
+        const roofMaterialCost = roofRealArea * selectedRoof.priceM2;
+        
+        details.push({ category: 'Карказ', material: `Дээвэр (${selectedRoof.name})`, qty: roofRealArea, unit: 'м2', price: roofMaterialCost });
 
-        const buildCost = foundCost + wallCost + roofCost;
+        // --- 2. Interior ---
 
-        const insulationFactor = scenario === 'economy' ? 1.5 : (scenario === 'standard' ? 1.0 : 0.7); 
-        const heatingCostPerYear = (area * floors * 5000 * 8 * insulationFactor); 
-        const maintenanceCostPerYear = buildCost * (scenario === 'economy' ? 0.03 : 0.01);
+        // Floor
+        if (config.floorType === 'parquet') {
+            const qty = Math.ceil(floorArea * floors * (1 + CALC_ENGINE.norms.parquet.waste));
+            const cost = qty * CALC_ENGINE.norms.parquet.price;
+            details.push({ category: 'Дотор засал', material: 'Паркет шал', qty: qty, unit: 'м2', price: cost });
+            totalCost += cost;
+        } else if (config.floorType === 'tile') {
+            const qty = Math.ceil(floorArea * floors * (1 + CALC_ENGINE.norms.tile.waste));
+            const cost = qty * CALC_ENGINE.norms.tile.price;
+            details.push({ category: 'Дотор засал', material: 'Плита (Шал)', qty: qty, unit: 'м2', price: cost });
+            totalCost += cost;
+        }
+
+        // Wall Finish
+        if (config.wallFinish === 'paint') {
+            const qty = Math.ceil(netWallArea * CALC_ENGINE.norms.paint.perM2);
+            const cost = qty * CALC_ENGINE.norms.paint.price;
+            details.push({ category: 'Дотор засал', material: 'Будаг (Эмульс)', qty: qty, unit: 'литр', price: cost, note: '2 давхар' });
+            totalCost += cost;
+        } else if (config.wallFinish === 'wallpaper') {
+            const strips = Math.ceil(perimeter / CALC_ENGINE.norms.wallpaper.width);
+            const stripsPerRoll = Math.floor(CALC_ENGINE.norms.wallpaper.length / wallHeight);
+            const rolls = Math.ceil(strips / stripsPerRoll) * floors;
+            const cost = rolls * CALC_ENGINE.norms.wallpaper.price;
+            details.push({ category: 'Дотор засал', material: 'Обой (1.06м)', qty: rolls, unit: 'рулон', price: cost });
+            totalCost += cost;
+        }
+
+        totalCost += (foundCost + wallCost + roofMaterialCost);
 
         return {
-            totalCost: buildCost,
-            lifecycle: {
-                heating10Y: heatingCostPerYear * 10,
-                maintenance10Y: maintenanceCostPerYear * 10,
-                total10Y: buildCost + (heatingCostPerYear * 10) + (maintenanceCostPerYear * 10)
-            },
-            details: [
-                { category: 'Суурь', material: 'Цемент', qty: cementQty, unit: 'кг', price: foundCost },
-                { category: 'Хана', material: wallType === 'brick' ? 'Тоосго' : 'Блок', qty: wallCount, unit: 'ш', price: wallCost },
-                { category: 'Дээвэр', material: 'Төмөр дээвэр', qty: roofCount, unit: 'м2', price: roofCost },
-            ]
+            totalCost: totalCost,
+            details: details
         };
     },
 };
@@ -209,6 +284,13 @@ const PROJECT_TEMPLATES = [
     { id: 'house_large', title: 'Амины орон сууц', subtitle: '10x12м, 2 давхар', icon: <Building2 size={24}/>, dims: { l: 12, w: 10 }, floors: 2 },
     { id: 'garage', title: 'Дулаан гараж', subtitle: '6x4м, 1 машин', icon: <Warehouse size={24}/>, dims: { l: 6, w: 4 }, floors: 1 },
     { id: 'fence', title: 'Хашаа', subtitle: '0.07 га', icon: <Fence size={24}/>, dims: { l: 35, w: 20 }, floors: 1 },
+];
+
+const FORUM_POSTS = [
+    { id: 1, user: 'Болд-Эрдэнэ', avatar: 'https://placehold.co/40x40/orange/white?text=B', title: 'Өвөл бетон цутгахад юу анхаарах вэ?', desc: 'Сайн байна уу? Одоо 11 сард суурь цутгавал хөлдөх болов уу? Ямар нэмэлт бодис хийх вэ?', category: 'structure', likes: 15, comments: 4, date: '2 цагийн өмнө' },
+    { id: 2, user: 'Сарантуяа', avatar: 'https://placehold.co/40x40/purple/white?text=S', title: 'Ванны өрөөний ус алдаад байна, яах вэ?', desc: 'Дээд айлаас ус алдаад таазаар шар толбо үүсчихлээ. Яаж засуулах вэ?', category: 'plumbing', likes: 8, comments: 12, date: 'Өчигдөр' },
+    { id: 3, user: 'Hutuch Admin', avatar: 'https://placehold.co/40x40/1e293b/white?text=A', title: 'Шинэчлэгдсэн үнийн тариф', desc: 'Цементийн үнэ 2024 оны 1-р улирлын байдлаар нэмэгдсэн байна. Дэлгэрэнгүйг...', category: 'general', likes: 45, comments: 2, date: '3 хоногийн өмнө' },
+    { id: 4, user: 'Ганбаа', avatar: 'https://placehold.co/40x40/green/white?text=G', title: 'Цахилгааны монтаж хийж өгнө', desc: 'Бүх төрлийн цахилгааны ажил чанартай хийнэ. Утас: 9911-XXXX', category: 'electric', likes: 2, comments: 0, date: '5 хоногийн өмнө' },
 ];
 
 // --- COMPONENTS ---
@@ -262,6 +344,7 @@ const Header = ({ cartCount, onNavigate, onOpenCart, darkMode, toggleDarkMode, u
                     <>
                         <button onClick={() => onNavigate('home')} className="text-sm font-bold text-slate-600 dark:text-slate-300 hover:text-orange-600 transition-colors">Нүүр</button>
                         <button onClick={() => onNavigate('builder')} className="text-sm font-bold text-slate-600 dark:text-slate-300 hover:text-orange-600 transition-colors">Төлөвлөгч</button>
+                        <button onClick={() => onNavigate('advice')} className="text-sm font-bold text-slate-600 dark:text-slate-300 hover:text-orange-600 transition-colors">Зөвлөгөө</button>
                         <button onClick={() => onNavigate('rfq')} className="text-sm font-bold text-slate-600 dark:text-slate-300 hover:text-orange-600 transition-colors">Үнийн санал</button>
                     </>
                 ) : (
@@ -732,6 +815,111 @@ const RentalScreen = ({ onBack }) => (
     <div className="animate-in slide-in-from-right py-8"><div className="flex items-center gap-4 mb-8"><button onClick={onBack} className="p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-white transition-colors shadow-sm"><ArrowLeft size={20}/></button><h1 className="text-2xl font-bold text-slate-900 dark:text-white">Багаж түрээс</h1></div><div className="grid grid-cols-1 md:grid-cols-2 gap-6">{RENTALS.map(tool => (<div key={tool.id} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[2rem] p-5 flex gap-5 shadow-sm"><div className="w-24 h-24 bg-slate-100 dark:bg-slate-800 rounded-2xl shrink-0 flex items-center justify-center overflow-hidden"><div className="w-full h-full bg-cover bg-center" style={{backgroundImage: `url(${tool.image})`}} /></div><div className="flex-1"> <h3 className="font-bold text-slate-900 dark:text-white text-base line-clamp-1">{tool.name}</h3><span className="block text-lg font-bold text-indigo-600 dark:text-indigo-400 mt-2">{formatCurrency(tool.price)}</span></div></div>))}</div></div>
 );
 
+const AdviceForumView = ({ onBack }) => {
+    const [activeCategory, setActiveCategory] = useState('all');
+    const [isAsking, setIsAsking] = useState(false);
+
+    const categories = [
+        { id: 'all', label: 'Бүгд' },
+        { id: 'structure', label: 'Барилга угсралт' },
+        { id: 'plumbing', label: 'Сантехник' },
+        { id: 'electric', label: 'Цахилгаан' },
+        { id: 'interior', label: 'Дотор засал' },
+        { id: 'legal', label: 'Зөвлөгөө' },
+        { id: 'general', label: 'Ерөнхий' }
+    ];
+
+    const filteredPosts = activeCategory === 'all' 
+        ? FORUM_POSTS 
+        : FORUM_POSTS.filter(post => post.category === activeCategory);
+
+    return (
+        <div className="animate-in fade-in py-8">
+            <div className="flex items-center gap-4 mb-6">
+                 <button onClick={onBack} className="p-2 bg-white dark:bg-slate-800 rounded-lg border hover:bg-slate-50 dark:border-slate-700 dark:text-white"><ArrowLeft size={20}/></button>
+                 <div className="flex-1">
+                    <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Зөвлөгөө & Форум</h2>
+                    <p className="text-slate-500 text-sm">Мэргэжлийн хүмүүсээс зөвлөгөө аваарай</p>
+                 </div>
+                 <button onClick={() => setIsAsking(true)} className="bg-orange-600 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-lg hover:bg-orange-700 transition-colors flex items-center gap-2">
+                    <MessageSquare size={18} /> Асуулт асуух
+                 </button>
+            </div>
+
+            {/* Categories */}
+            <div className="flex overflow-x-auto pb-4 gap-2 no-scrollbar mb-6">
+                {categories.map(cat => (
+                    <button 
+                        key={cat.id}
+                        onClick={() => setActiveCategory(cat.id)}
+                        className={`px-4 py-2 rounded-full text-sm font-bold whitespace-nowrap transition-all ${activeCategory === cat.id ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900' : 'bg-white text-slate-600 border border-slate-200 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400 hover:bg-slate-50'}`}
+                    >
+                        {cat.label}
+                    </button>
+                ))}
+            </div>
+
+            {/* Posts Feed */}
+            <div className="space-y-4">
+                {filteredPosts.map(post => (
+                    <div key={post.id} className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-md transition-all cursor-pointer group">
+                        <div className="flex items-start justify-between mb-3">
+                            <div className="flex items-center gap-3">
+                                <img src={post.avatar} alt="" className="w-10 h-10 rounded-full bg-slate-100 object-cover" />
+                                <div>
+                                    <h4 className="font-bold text-slate-900 dark:text-white text-sm group-hover:text-orange-600 transition-colors">{post.title}</h4>
+                                    <div className="flex items-center gap-2 text-xs text-slate-500">
+                                        <span className="font-semibold text-slate-700 dark:text-slate-300">{post.user}</span>
+                                        <span>•</span>
+                                        <span>{post.date}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <span className="px-2 py-1 bg-slate-100 dark:bg-slate-800 text-slate-500 text-[10px] rounded-lg font-bold uppercase">{categories.find(c => c.id === post.category)?.label}</span>
+                        </div>
+                        
+                        <p className="text-slate-600 dark:text-slate-400 text-sm mb-4 line-clamp-2">{post.desc}</p>
+                        
+                        <div className="flex items-center gap-4 text-xs font-bold text-slate-500">
+                            <div className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-white transition-colors"><ThumbsUp size={16}/> {post.likes}</div>
+                            <div className="flex items-center gap-1 hover:text-slate-900 dark:hover:text-white transition-colors"><MessageCircle size={16}/> {post.comments} Хариулт</div>
+                        </div>
+                    </div>
+                ))}
+            </div>
+
+            {/* Ask Modal (Visual Only) */}
+            {isAsking && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in">
+                    <div className="bg-white dark:bg-slate-900 w-full max-w-lg rounded-3xl p-6 shadow-2xl">
+                        <div className="flex justify-between items-center mb-6">
+                            <h3 className="font-bold text-lg text-slate-900 dark:text-white">Асуулт асуух</h3>
+                            <button onClick={() => setIsAsking(false)} className="p-2 bg-slate-100 dark:bg-slate-800 rounded-full text-slate-500"><X size={20}/></button>
+                        </div>
+                        <div className="space-y-4">
+                            <div>
+                                <label className="text-xs font-bold text-slate-500 uppercase mb-1 block">Гарчиг</label>
+                                <input type="text" placeholder="Жишээ: Хананд цууралт үүсээд байна" className="w-full p-3 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 outline-none" />
+                            </div>
+                            <div>
+                                <label className="text-xs font-bold text-slate-500 uppercase mb-1 block">Төрөл</label>
+                                <select className="w-full p-3 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 outline-none">
+                                    {categories.filter(c => c.id !== 'all').map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
+                                </select>
+                            </div>
+                            <div>
+                                <label className="text-xs font-bold text-slate-500 uppercase mb-1 block">Дэлгэрэнгүй</label>
+                                <textarea rows="4" placeholder="Асуудлаа дэлгэрэнгүй бичнэ үү..." className="w-full p-3 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 outline-none resize-none"></textarea>
+                            </div>
+                            <button onClick={() => { alert('Таны асуулт нийтлэгдлээ!'); setIsAsking(false); }} className="w-full py-3 bg-orange-600 text-white font-bold rounded-xl shadow-lg hover:bg-orange-700">Нийтлэх</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
+
 const CartDrawer = ({ cart, isOpen, onClose, onCheckout }) => {
     const [district, setDistrict] = useState('');
     const [slot, setSlot] = useState('');
@@ -788,77 +976,162 @@ const CartDrawer = ({ cart, isOpen, onClose, onCheckout }) => {
     );
 };
 
-// --- VISUAL BUILDER VIEW (Restored) ---
+// --- VISUAL BUILDER VIEW (Updated with Interior) ---
 const VisualBuilderView = ({ onBack, template }) => {
     const [dims, setDims] = useState(template?.dims || { l: 8, w: 6 });
     const [floors, setFloors] = useState(template?.floors || 1);
-    const [config, setConfig] = useState({ wall: 'block_light', roof: 'gable_red' });
+    // Config: wall, roof, floorType, wallFinish
+    const [config, setConfig] = useState({ wall: 'block', roof: 'gable', floorType: 'none', wallFinish: 'none' });
     const [result, setResult] = useState(null);
 
     const calculate = () => {
-        const res = CALC_ENGINE.calculateProject(dims, floors, config, 'standard');
+        const res = CALC_ENGINE.calculateProject(dims, floors, config);
         setResult(res);
     };
 
     return (
         <div className="animate-in fade-in py-8">
             <div className="flex items-center gap-4 mb-6">
-                 <button onClick={onBack} className="p-2 bg-white rounded-lg border hover:bg-slate-50"><ArrowLeft size={20}/></button>
-                 <h2 className="text-2xl font-bold">Барилгын төлөвлөгч</h2>
+                 <button onClick={onBack} className="p-2 bg-white dark:bg-slate-800 rounded-lg border hover:bg-slate-50 dark:border-slate-700 dark:text-white"><ArrowLeft size={20}/></button>
+                 <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Барилгын төлөвлөгч</h2>
             </div>
             
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <div className="space-y-6 bg-white p-6 rounded-3xl shadow-sm border border-slate-200">
+                {/* Inputs */}
+                <div className="space-y-6 bg-white dark:bg-slate-900 p-6 rounded-3xl shadow-sm border border-slate-200 dark:border-slate-800">
                     <div>
-                        <h3 className="font-bold mb-4">1. Хэмжээ (м)</h3>
-                        <div className="grid grid-cols-2 gap-4">
-                            <InputField label="Урт" value={dims.l} onChange={(v) => setDims({...dims, l: v})} />
-                            <InputField label="Өргөн" value={dims.w} onChange={(v) => setDims({...dims, w: v})} />
-                            <InputField label="Давхар" value={floors} onChange={setFloors} />
+                        <h3 className="font-bold mb-4 text-slate-900 dark:text-white flex items-center gap-2">
+                            <Ruler size={18} className="text-orange-600"/> 1. Хэмжээ (м)
+                        </h3>
+                        <div className="grid grid-cols-3 gap-4">
+                            <div className="space-y-1">
+                                <label className="text-xs text-slate-500">Урт</label>
+                                <input type="number" className="w-full p-3 border rounded-xl dark:bg-slate-800 dark:border-slate-700" value={dims.l} onChange={(e) => setDims({...dims, l: parseFloat(e.target.value)||0})} />
+                            </div>
+                            <div className="space-y-1">
+                                <label className="text-xs text-slate-500">Өргөн</label>
+                                <input type="number" className="w-full p-3 border rounded-xl dark:bg-slate-800 dark:border-slate-700" value={dims.w} onChange={(e) => setDims({...dims, w: parseFloat(e.target.value)||0})} />
+                            </div>
+                            <div className="space-y-1">
+                                <label className="text-xs text-slate-500">Давхар</label>
+                                <input type="number" className="w-full p-3 border rounded-xl dark:bg-slate-800 dark:border-slate-700" value={floors} onChange={(e) => setFloors(parseFloat(e.target.value)||0)} />
+                            </div>
                         </div>
                     </div>
                     
                     <div>
-                        <h3 className="font-bold mb-4">2. Материал</h3>
-                        <div className="space-y-4">
-                            <div>
-                                <label className="text-sm text-slate-500 mb-1 block">Хана</label>
-                                <select 
-                                    className="w-full p-3 rounded-xl border bg-slate-50"
-                                    value={config.wall}
-                                    onChange={(e) => setConfig({...config, wall: e.target.value})}
+                        <h3 className="font-bold mb-4 text-slate-900 dark:text-white flex items-center gap-2">
+                            <BrickWall size={18} className="text-orange-600"/> 2. Хананы материал
+                        </h3>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                            {WALL_TYPES.map(wall => (
+                                <button
+                                    key={wall.id}
+                                    onClick={() => setConfig({...config, wall: wall.id})}
+                                    className={`p-3 rounded-xl border text-left transition-all relative overflow-hidden group ${config.wall === wall.id ? 'bg-orange-600 text-white border-orange-600 shadow-lg shadow-orange-200' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:border-orange-300'}`}
                                 >
-                                    <option value="block_light">Хөнгөн блок</option>
-                                    <option value="brick_red">Улаан тоосго</option>
-                                </select>
+                                    <div className="text-xs font-bold mb-1">{wall.name}</div>
+                                    <div className={`text-[10px] ${config.wall === wall.id ? 'text-orange-100' : 'text-slate-400'}`}>{wall.desc}</div>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div>
+                        <h3 className="font-bold mb-4 text-slate-900 dark:text-white flex items-center gap-2">
+                            <Home size={18} className="text-orange-600"/> 3. Дээврийн төрөл
+                        </h3>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                            {ROOF_TYPES.map(roof => (
+                                <button
+                                    key={roof.id}
+                                    onClick={() => setConfig({...config, roof: roof.id})}
+                                    className={`p-3 rounded-xl border text-left transition-all relative overflow-hidden group ${config.roof === roof.id ? 'bg-orange-600 text-white border-orange-600 shadow-lg shadow-orange-200' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:border-orange-300'}`}
+                                >
+                                    <div className="text-xs font-bold mb-1">{roof.name}</div>
+                                    <div className={`text-[10px] ${config.roof === roof.id ? 'text-orange-100' : 'text-slate-400'}`}>{roof.desc}</div>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
+                        <h3 className="font-bold mb-4 text-slate-900 dark:text-white flex items-center gap-2">
+                            <PaintBucket size={18} className="text-orange-600"/> 4. Дотор засал (Нэмэлт)
+                        </h3>
+                        <div className="grid grid-cols-2 gap-6">
+                            <div>
+                                <label className="text-xs font-bold text-slate-500 mb-2 block">Шал</label>
+                                <div className="space-y-2">
+                                    {['none', 'parquet', 'tile'].map(t => (
+                                        <label key={t} className="flex items-center gap-2 text-sm cursor-pointer text-slate-700 dark:text-slate-300">
+                                            <input 
+                                                type="radio" 
+                                                name="floor" 
+                                                checked={config.floorType === t} 
+                                                onChange={() => setConfig({...config, floorType: t})}
+                                                className="accent-orange-600"
+                                            />
+                                            {t === 'none' ? 'Тооцохгүй' : t === 'parquet' ? 'Паркет' : 'Плита'}
+                                        </label>
+                                    ))}
+                                </div>
+                            </div>
+                            <div>
+                                <label className="text-xs font-bold text-slate-500 mb-2 block">Хана өнгөлгөө</label>
+                                <div className="space-y-2">
+                                    {['none', 'paint', 'wallpaper'].map(t => (
+                                        <label key={t} className="flex items-center gap-2 text-sm cursor-pointer text-slate-700 dark:text-slate-300">
+                                            <input 
+                                                type="radio" 
+                                                name="wallFinish" 
+                                                checked={config.wallFinish === t} 
+                                                onChange={() => setConfig({...config, wallFinish: t})}
+                                                className="accent-orange-600"
+                                            />
+                                            {t === 'none' ? 'Тооцохгүй' : t === 'paint' ? 'Будаг' : 'Обой'}
+                                        </label>
+                                    ))}
+                                </div>
                             </div>
                         </div>
                     </div>
 
-                    <button onClick={calculate} className="w-full py-4 bg-slate-900 text-white font-bold rounded-xl shadow-lg">Тооцоолох</button>
+                    <button onClick={calculate} className="w-full py-4 bg-slate-900 dark:bg-orange-600 text-white font-bold rounded-xl shadow-lg hover:opacity-90 transition-opacity flex items-center justify-center gap-2">
+                        <Calculator size={20} /> Тооцоолох
+                    </button>
                 </div>
 
+                {/* Result */}
                 {result && (
-                    <div className="bg-slate-900 text-white p-8 rounded-3xl shadow-2xl animate-in slide-in-from-right">
-                        <h3 className="text-xl font-bold mb-6 text-orange-400">Тооцооллын үр дүн</h3>
-                        <div className="text-4xl font-black mb-8">{formatCurrency(result.totalCost)}</div>
+                    <div className="bg-slate-900 text-white p-8 rounded-3xl shadow-2xl animate-in slide-in-from-right flex flex-col h-full border border-slate-700">
+                        <div>
+                            <h3 className="text-sm font-bold mb-2 text-orange-500 uppercase tracking-wider">Урьдчилсан төсөв</h3>
+                            <div className="text-4xl font-black mb-1">{formatCurrency(result.totalCost)}</div>
+                            <p className="text-slate-400 text-xs mb-8">*Материал + Хийцийн багцаа үнэ</p>
+                        </div>
                         
-                        <div className="space-y-4 mb-8">
+                        <div className="space-y-4 mb-8 flex-1 overflow-y-auto max-h-[400px] pr-2">
                             {result.details.map((d, i) => (
-                                <div key={i} className="flex justify-between items-center border-b border-slate-700 pb-3">
+                                <div key={i} className="flex justify-between items-start border-b border-slate-800 pb-4 last:border-0">
                                     <div>
-                                        <div className="text-sm font-bold text-slate-300">{d.category}</div>
-                                        <div className="text-xs text-slate-500">{d.material}</div>
+                                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${d.category === 'Карказ' ? 'bg-blue-900 text-blue-300' : 'bg-green-900 text-green-300'}`}>{d.category}</span>
+                                        <div className="text-sm font-bold text-white mt-1">{d.material}</div>
+                                        {d.note && <div className="text-[10px] text-orange-400 mt-0.5">{d.note}</div>}
                                     </div>
                                     <div className="text-right">
-                                        <div className="font-bold">{d.qty} {d.unit}</div>
-                                        <div className="text-xs text-orange-400">{formatCurrency(d.price)}</div>
+                                        <div className="font-bold text-sm">{d.qty.toLocaleString()} {d.unit}</div>
+                                        <div className="text-xs text-slate-400">{formatCurrency(d.price)}</div>
                                     </div>
                                 </div>
                             ))}
                         </div>
                         
-                        <button className="w-full py-3 bg-orange-600 rounded-xl font-bold">Үнийн санал авах (RFQ)</button>
+                        <div className="mt-auto pt-4 border-t border-slate-800">
+                            <button className="w-full py-3 bg-orange-600 rounded-xl font-bold hover:bg-orange-700 transition-colors flex items-center justify-center gap-2">
+                                <FileText size={18} /> Үнийн санал авах (RFQ)
+                            </button>
+                        </div>
                     </div>
                 )}
             </div>
@@ -932,7 +1205,10 @@ const HomeView = ({ onNavigate, onSelectCategory, onStartTemplate }) => (
         </div>
         
         <div className="px-2 mb-10">
-            <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-4 px-2">Түгээмэл төслүүдээс эхлэх</h2>
+            <div className="flex justify-between items-center mb-4 px-2">
+                <h2 className="text-lg font-bold text-slate-900 dark:text-white">Түгээмэл</h2>
+                <button onClick={() => onNavigate('advice')} className="text-orange-600 text-xs font-bold hover:underline">Бүгдийг харах</button>
+            </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {PROJECT_TEMPLATES.map(tpl => (
                     <button 
@@ -947,6 +1223,24 @@ const HomeView = ({ onNavigate, onSelectCategory, onStartTemplate }) => (
                         <p className="text-[10px] text-slate-500 mt-1">{tpl.subtitle}</p>
                     </button>
                 ))}
+            </div>
+        </div>
+
+        {/* Advice Shortcut Card */}
+        <div className="px-2 mb-10">
+            <div onClick={() => onNavigate('advice')} className="bg-gradient-to-r from-indigo-900 to-slate-900 rounded-3xl p-6 text-white shadow-lg cursor-pointer hover:scale-[1.01] transition-transform relative overflow-hidden group">
+                <div className="relative z-10 flex justify-between items-center">
+                    <div>
+                        <h3 className="font-bold text-lg mb-1 flex items-center gap-2"><HelpCircle size={20}/> Зөвлөгөө авах уу?</h3>
+                        <p className="text-indigo-200 text-xs max-w-xs">Мэргэжлийн инженерүүд болон туршлагатай хэрэглэгчдээс асуугаарай.</p>
+                    </div>
+                    <div className="bg-white/10 p-3 rounded-full backdrop-blur-sm group-hover:bg-white/20 transition-colors">
+                        <ArrowRight size={20} />
+                    </div>
+                </div>
+                <div className="absolute top-0 right-0 p-8 opacity-5">
+                    <MessageSquare size={120} />
+                </div>
             </div>
         </div>
 
@@ -1031,6 +1325,7 @@ export default function App() {
                         <>
                             {view === 'home' && <HomeView onNavigate={handleNav} onSelectCategory={(id) => { setSelectedCat(id); setView('category'); }} onStartTemplate={handleStartTemplate} />}
                             {view === 'builder' && <VisualBuilderView onBack={() => setView('home')} template={initialTemplate} />}
+                            {view === 'advice' && <AdviceForumView onBack={() => setView('home')} />}
                             {view === 'rfq' && <RFQManager rfqs={rfqs} onBack={() => setView('home')} />}
                             {view === 'category' && <CategoryDetail categoryId={selectedCat} groupId={selectedCat} onBack={() => setView('home')} onAddToCart={handleAddToCart} allProducts={allProducts} />}
                             
