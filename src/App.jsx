@@ -20,10 +20,11 @@ import {
 } from 'lucide-react';
 
 // --- Firebase Stub (For Compilation) ---
+// eslint-disable-next-line no-undef
 const firebaseConfig = JSON.parse(__firebase_config);
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
-const db = getFirestore(app);
+getFirestore(app); // initialized for future use
 
 // ==========================================
 // 1. DATA CONSTANTS & LOGIC
@@ -922,7 +923,6 @@ const AdviceForumView = ({ onBack }) => {
 
 const CartDrawer = ({ cart, isOpen, onClose, onCheckout }) => {
     const [district, setDistrict] = useState('');
-    const [slot, setSlot] = useState('');
     
     // Delivery Calculation
     const delivery = useMemo(() => {
@@ -976,164 +976,336 @@ const CartDrawer = ({ cart, isOpen, onClose, onCheckout }) => {
     );
 };
 
-// --- VISUAL BUILDER VIEW (Updated with Interior) ---
+// --- HELPER COMPONENTS (outside render) ---
+const CostBar = ({ label, cost, total, color }) => {
+    const pct = total > 0 ? Math.round((cost / total) * 100) : 0;
+    return (
+        <div className="mb-3">
+            <div className="flex justify-between text-xs mb-1">
+                <span className="text-slate-400">{label}</span>
+                <span className="text-white font-bold">{pct}%</span>
+            </div>
+            <div className="h-2 bg-slate-800 rounded-full overflow-hidden">
+                <div className={`h-full rounded-full transition-all duration-700 ${color}`} style={{ width: `${pct}%` }} />
+            </div>
+            <div className="text-right text-[10px] text-slate-500 mt-0.5">{formatCurrency(cost)}</div>
+        </div>
+    );
+};
+
+const CategoryBadge = ({ cat }) => {
+    const colors = {
+        'Суурь': 'bg-purple-900/60 text-purple-300',
+        'Карказ': 'bg-blue-900/60 text-blue-300',
+        'Дотор засал': 'bg-green-900/60 text-green-300',
+    };
+    return <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${colors[cat] || 'bg-slate-700 text-slate-300'}`}>{cat}</span>;
+};
+
+// --- VISUAL BUILDER VIEW (Professional Enhanced) ---
 const VisualBuilderView = ({ onBack, template }) => {
     const [dims, setDims] = useState(template?.dims || { l: 8, w: 6 });
     const [floors, setFloors] = useState(template?.floors || 1);
-    // Config: wall, roof, floorType, wallFinish
-    const [config, setConfig] = useState({ wall: 'block', roof: 'gable', floorType: 'none', wallFinish: 'none' });
-    const [result, setResult] = useState(null);
+    const [windows, setWindows] = useState(4);
+    const [doors, setDoors] = useState(2);
+    const [includeLaborCost, setIncludeLaborCost] = useState(true);
+    const [config, setConfig] = useState({ foundation: 'strip', wall: 'block', roof: 'gable', floorType: 'none', wallFinish: 'none' });
+    const [activeTab, setActiveTab] = useState('structure');
 
-    const calculate = () => {
-        const res = CALC_ENGINE.calculateProject(dims, floors, config);
-        setResult(res);
-    };
+    // Real-time calculation with useMemo (no setState in effect)
+    const result = useMemo(() => {
+        if (dims.l > 0 && dims.w > 0 && floors > 0) {
+            const res = CALC_ENGINE.calculateProject(dims, floors, config);
+            const openingArea = (windows * 1.5) + (doors * 2.0);
+            const laborCost = includeLaborCost ? Math.round(res.totalCost * 0.35) : 0;
+            return { ...res, openingArea, laborCost, grandTotal: res.totalCost + laborCost };
+        }
+        return null;
+    }, [dims, floors, config, windows, doors, includeLaborCost]);
+
+    const handlePrint = () => window.print();
+
+    const TABS = [
+        { id: 'structure', label: 'Карказ', icon: <BrickWall size={16}/> },
+        { id: 'interior', label: 'Дотор', icon: <PaintBucket size={16}/> },
+        { id: 'openings', label: 'Нээлхий', icon: <DoorOpen size={16}/> },
+    ];
+
+    const structureCost = result ? result.details.filter(d => d.category === 'Карказ' || d.category === 'Суурь').reduce((s, d) => s + d.price, 0) : 0;
+    const interiorCost = result ? result.details.filter(d => d.category === 'Дотор засал').reduce((s, d) => s + d.price, 0) : 0;
 
     return (
         <div className="animate-in fade-in py-8">
-            <div className="flex items-center gap-4 mb-6">
-                 <button onClick={onBack} className="p-2 bg-white dark:bg-slate-800 rounded-lg border hover:bg-slate-50 dark:border-slate-700 dark:text-white"><ArrowLeft size={20}/></button>
-                 <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Барилгын төлөвлөгч</h2>
-            </div>
-            
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                {/* Inputs */}
-                <div className="space-y-6 bg-white dark:bg-slate-900 p-6 rounded-3xl shadow-sm border border-slate-200 dark:border-slate-800">
+            <div className="flex items-center justify-between gap-4 mb-6">
+                <div className="flex items-center gap-3">
+                    <button onClick={onBack} className="p-2 bg-white dark:bg-slate-800 rounded-lg border hover:bg-slate-50 dark:border-slate-700 dark:text-white"><ArrowLeft size={20}/></button>
                     <div>
-                        <h3 className="font-bold mb-4 text-slate-900 dark:text-white flex items-center gap-2">
-                            <Ruler size={18} className="text-orange-600"/> 1. Хэмжээ (м)
-                        </h3>
-                        <div className="grid grid-cols-3 gap-4">
-                            <div className="space-y-1">
-                                <label className="text-xs text-slate-500">Урт</label>
-                                <input type="number" className="w-full p-3 border rounded-xl dark:bg-slate-800 dark:border-slate-700" value={dims.l} onChange={(e) => setDims({...dims, l: parseFloat(e.target.value)||0})} />
-                            </div>
-                            <div className="space-y-1">
-                                <label className="text-xs text-slate-500">Өргөн</label>
-                                <input type="number" className="w-full p-3 border rounded-xl dark:bg-slate-800 dark:border-slate-700" value={dims.w} onChange={(e) => setDims({...dims, w: parseFloat(e.target.value)||0})} />
-                            </div>
-                            <div className="space-y-1">
-                                <label className="text-xs text-slate-500">Давхар</label>
-                                <input type="number" className="w-full p-3 border rounded-xl dark:bg-slate-800 dark:border-slate-700" value={floors} onChange={(e) => setFloors(parseFloat(e.target.value)||0)} />
-                            </div>
-                        </div>
+                        <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Барилгын төлөвлөгч</h2>
+                        <p className="text-xs text-slate-500">Бодит цагийн автомат тооцоо</p>
                     </div>
-                    
-                    <div>
-                        <h3 className="font-bold mb-4 text-slate-900 dark:text-white flex items-center gap-2">
-                            <BrickWall size={18} className="text-orange-600"/> 2. Хананы материал
-                        </h3>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                            {WALL_TYPES.map(wall => (
-                                <button
-                                    key={wall.id}
-                                    onClick={() => setConfig({...config, wall: wall.id})}
-                                    className={`p-3 rounded-xl border text-left transition-all relative overflow-hidden group ${config.wall === wall.id ? 'bg-orange-600 text-white border-orange-600 shadow-lg shadow-orange-200' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:border-orange-300'}`}
-                                >
-                                    <div className="text-xs font-bold mb-1">{wall.name}</div>
-                                    <div className={`text-[10px] ${config.wall === wall.id ? 'text-orange-100' : 'text-slate-400'}`}>{wall.desc}</div>
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-
-                    <div>
-                        <h3 className="font-bold mb-4 text-slate-900 dark:text-white flex items-center gap-2">
-                            <Home size={18} className="text-orange-600"/> 3. Дээврийн төрөл
-                        </h3>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                            {ROOF_TYPES.map(roof => (
-                                <button
-                                    key={roof.id}
-                                    onClick={() => setConfig({...config, roof: roof.id})}
-                                    className={`p-3 rounded-xl border text-left transition-all relative overflow-hidden group ${config.roof === roof.id ? 'bg-orange-600 text-white border-orange-600 shadow-lg shadow-orange-200' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:border-orange-300'}`}
-                                >
-                                    <div className="text-xs font-bold mb-1">{roof.name}</div>
-                                    <div className={`text-[10px] ${config.roof === roof.id ? 'text-orange-100' : 'text-slate-400'}`}>{roof.desc}</div>
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-
-                    <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
-                        <h3 className="font-bold mb-4 text-slate-900 dark:text-white flex items-center gap-2">
-                            <PaintBucket size={18} className="text-orange-600"/> 4. Дотор засал (Нэмэлт)
-                        </h3>
-                        <div className="grid grid-cols-2 gap-6">
-                            <div>
-                                <label className="text-xs font-bold text-slate-500 mb-2 block">Шал</label>
-                                <div className="space-y-2">
-                                    {['none', 'parquet', 'tile'].map(t => (
-                                        <label key={t} className="flex items-center gap-2 text-sm cursor-pointer text-slate-700 dark:text-slate-300">
-                                            <input 
-                                                type="radio" 
-                                                name="floor" 
-                                                checked={config.floorType === t} 
-                                                onChange={() => setConfig({...config, floorType: t})}
-                                                className="accent-orange-600"
-                                            />
-                                            {t === 'none' ? 'Тооцохгүй' : t === 'parquet' ? 'Паркет' : 'Плита'}
-                                        </label>
-                                    ))}
-                                </div>
-                            </div>
-                            <div>
-                                <label className="text-xs font-bold text-slate-500 mb-2 block">Хана өнгөлгөө</label>
-                                <div className="space-y-2">
-                                    {['none', 'paint', 'wallpaper'].map(t => (
-                                        <label key={t} className="flex items-center gap-2 text-sm cursor-pointer text-slate-700 dark:text-slate-300">
-                                            <input 
-                                                type="radio" 
-                                                name="wallFinish" 
-                                                checked={config.wallFinish === t} 
-                                                onChange={() => setConfig({...config, wallFinish: t})}
-                                                className="accent-orange-600"
-                                            />
-                                            {t === 'none' ? 'Тооцохгүй' : t === 'paint' ? 'Будаг' : 'Обой'}
-                                        </label>
-                                    ))}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <button onClick={calculate} className="w-full py-4 bg-slate-900 dark:bg-orange-600 text-white font-bold rounded-xl shadow-lg hover:opacity-90 transition-opacity flex items-center justify-center gap-2">
-                        <Calculator size={20} /> Тооцоолох
+                </div>
+                {result && (
+                    <button onClick={handlePrint} className="hidden sm:flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 transition-colors">
+                        <Printer size={16}/> Хэвлэх
                     </button>
+                )}
+            </div>
+
+            {/* Dimensions Row */}
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 mb-6 shadow-sm">
+                <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3 flex items-center gap-2"><Ruler size={14} className="text-orange-600"/> Барилгын хэмжээ</h3>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                    {[
+                        { label: 'Урт (м)', val: dims.l, set: v => setDims({...dims, l: v}), min: 1 },
+                        { label: 'Өргөн (м)', val: dims.w, set: v => setDims({...dims, w: v}), min: 1 },
+                        { label: 'Давхар', val: floors, set: v => setFloors(Math.max(1, v)), min: 1 },
+                        { label: 'Хана өндөр (м)', val: 2.8, set: () => {}, min: 2, disabled: true },
+                    ].map((f, i) => (
+                        <div key={i}>
+                            <label className="text-xs text-slate-500 block mb-1">{f.label}</label>
+                            <input type="number" min={f.min} disabled={f.disabled}
+                                value={f.val}
+                                onChange={e => f.set(parseFloat(e.target.value) || 0)}
+                                className="w-full p-2.5 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm font-bold focus:border-orange-500 outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+                            />
+                        </div>
+                    ))}
+                </div>
+                <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 flex gap-6 text-xs text-slate-500">
+                    <span>Талбай: <strong className="text-slate-900 dark:text-white">{(dims.l * dims.w * floors).toFixed(1)} м²</strong></span>
+                    <span>Периметр: <strong className="text-slate-900 dark:text-white">{((dims.l + dims.w) * 2).toFixed(1)} м</strong></span>
+                    <span>Хана: <strong className="text-slate-900 dark:text-white">{((dims.l + dims.w) * 2 * 2.8 * floors * 0.85).toFixed(1)} м²</strong></span>
+                </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+                {/* Left: Config Panel */}
+                <div className="lg:col-span-3 space-y-4">
+                    {/* Tab Switch */}
+                    <div className="flex gap-2 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
+                        {TABS.map(tab => (
+                            <button key={tab.id} onClick={() => setActiveTab(tab.id)}
+                                className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === tab.id ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                            >
+                                {tab.icon} {tab.label}
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* TAB: Карказ */}
+                    {activeTab === 'structure' && (
+                        <div className="space-y-5">
+                            {/* Foundation */}
+                            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm">
+                                <h3 className="font-bold mb-3 text-slate-900 dark:text-white flex items-center gap-2 text-sm">
+                                    <Layers size={16} className="text-purple-600"/> 1. Суурийн төрөл
+                                </h3>
+                                <div className="grid grid-cols-3 gap-2">
+                                    {FOUNDATION_TYPES.map(f => (
+                                        <button key={f.id} onClick={() => setConfig({...config, foundation: f.id})}
+                                            className={`p-3 rounded-xl border text-left transition-all ${config.foundation === f.id ? 'bg-purple-600 text-white border-purple-600 shadow-lg' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:border-purple-300'}`}
+                                        >
+                                            <div className="flex items-center gap-1.5 mb-1">{f.icon}<span className="text-xs font-bold">{f.name}</span></div>
+                                            <div className={`text-[10px] leading-tight ${config.foundation === f.id ? 'text-purple-100' : 'text-slate-400'}`}>{f.desc}</div>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Wall */}
+                            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm">
+                                <h3 className="font-bold mb-3 text-slate-900 dark:text-white flex items-center gap-2 text-sm">
+                                    <BrickWall size={16} className="text-orange-600"/> 2. Хананы материал
+                                </h3>
+                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                    {WALL_TYPES.map(wall => (
+                                        <button key={wall.id} onClick={() => setConfig({...config, wall: wall.id})}
+                                            className={`p-3 rounded-xl border text-left transition-all ${config.wall === wall.id ? 'bg-orange-600 text-white border-orange-600 shadow-lg shadow-orange-100 dark:shadow-none' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:border-orange-300'}`}
+                                        >
+                                            <div className="text-xs font-bold mb-0.5">{wall.name}</div>
+                                            <div className={`text-[10px] ${config.wall === wall.id ? 'text-orange-100' : 'text-slate-400'}`}>{wall.desc}</div>
+                                            <div className={`text-[10px] font-bold mt-1 ${config.wall === wall.id ? 'text-orange-200' : 'text-orange-600'}`}>{formatCurrency(wall.price)}/{wall.unit}</div>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Roof */}
+                            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm">
+                                <h3 className="font-bold mb-3 text-slate-900 dark:text-white flex items-center gap-2 text-sm">
+                                    <Home size={16} className="text-blue-600"/> 3. Дээврийн төрөл
+                                </h3>
+                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                                    {ROOF_TYPES.map(roof => (
+                                        <button key={roof.id} onClick={() => setConfig({...config, roof: roof.id})}
+                                            className={`p-3 rounded-xl border text-left transition-all ${config.roof === roof.id ? 'bg-blue-600 text-white border-blue-600 shadow-lg' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:border-blue-300'}`}
+                                        >
+                                            <div className="text-xs font-bold mb-0.5">{roof.name}</div>
+                                            <div className={`text-[10px] leading-tight ${config.roof === roof.id ? 'text-blue-100' : 'text-slate-400'}`}>{roof.desc}</div>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* TAB: Дотор засал */}
+                    {activeTab === 'interior' && (
+                        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm space-y-6">
+                            <div>
+                                <h3 className="font-bold mb-3 text-slate-900 dark:text-white flex items-center gap-2 text-sm">
+                                    <Square size={16} className="text-green-600"/> Шалны материал
+                                </h3>
+                                <div className="grid grid-cols-3 gap-2">
+                                    {[
+                                        { id: 'none', label: 'Тооцохгүй', sub: '—' },
+                                        { id: 'parquet', label: 'Паркет', sub: formatCurrency(45000) + '/м²' },
+                                        { id: 'tile', label: 'Плита', sub: formatCurrency(35000) + '/м²' },
+                                    ].map(t => (
+                                        <button key={t.id} onClick={() => setConfig({...config, floorType: t.id})}
+                                            className={`p-3 rounded-xl border text-center transition-all ${config.floorType === t.id ? 'bg-green-600 text-white border-green-600 shadow-lg' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:border-green-300'}`}
+                                        >
+                                            <div className="text-xs font-bold">{t.label}</div>
+                                            <div className={`text-[10px] mt-0.5 ${config.floorType === t.id ? 'text-green-100' : 'text-slate-400'}`}>{t.sub}</div>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                            <div>
+                                <h3 className="font-bold mb-3 text-slate-900 dark:text-white flex items-center gap-2 text-sm">
+                                    <PaintBucket size={16} className="text-pink-600"/> Хана өнгөлгөө
+                                </h3>
+                                <div className="grid grid-cols-3 gap-2">
+                                    {[
+                                        { id: 'none', label: 'Тооцохгүй', sub: '—' },
+                                        { id: 'paint', label: 'Будаг', sub: formatCurrency(18000) + '/л' },
+                                        { id: 'wallpaper', label: 'Обой', sub: formatCurrency(65000) + '/рул' },
+                                    ].map(t => (
+                                        <button key={t.id} onClick={() => setConfig({...config, wallFinish: t.id})}
+                                            className={`p-3 rounded-xl border text-center transition-all ${config.wallFinish === t.id ? 'bg-pink-600 text-white border-pink-600 shadow-lg' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:border-pink-300'}`}
+                                        >
+                                            <div className="text-xs font-bold">{t.label}</div>
+                                            <div className={`text-[10px] mt-0.5 ${config.wallFinish === t.id ? 'text-pink-100' : 'text-slate-400'}`}>{t.sub}</div>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                            <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4">
+                                <label className="flex items-center gap-3 cursor-pointer">
+                                    <input type="checkbox" checked={includeLaborCost} onChange={e => setIncludeLaborCost(e.target.checked)} className="accent-orange-600 w-4 h-4" />
+                                    <div>
+                                        <div className="font-bold text-sm text-slate-900 dark:text-white">Ажлын хөлс нэмэх (35%)</div>
+                                        <div className="text-xs text-slate-500">Монголын барилгын ажлын зах зээлийн дундаж норм</div>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* TAB: Нээлхий */}
+                    {activeTab === 'openings' && (
+                        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm space-y-5">
+                            <p className="text-xs text-slate-500 bg-slate-50 dark:bg-slate-800 rounded-lg p-3">Цонх болон хаалганы тоо хана тооцооноос хасагдана (1.5м² / 2.0м² тутамд).</p>
+                            <div>
+                                <label className="text-sm font-bold text-slate-700 dark:text-slate-300 block mb-2 flex items-center gap-2"><Maximize size={16} className="text-sky-500"/> Цонхны тоо</label>
+                                <div className="flex items-center gap-4">
+                                    <button onClick={() => setWindows(Math.max(0, windows-1))} className="w-10 h-10 bg-slate-100 dark:bg-slate-800 rounded-xl font-bold text-lg hover:bg-slate-200 transition-colors">−</button>
+                                    <span className="text-2xl font-black w-8 text-center text-slate-900 dark:text-white">{windows}</span>
+                                    <button onClick={() => setWindows(windows+1)} className="w-10 h-10 bg-orange-600 rounded-xl font-bold text-lg text-white hover:bg-orange-700 transition-colors">+</button>
+                                    <span className="text-xs text-slate-400">× 1.5 м² = {(windows * 1.5).toFixed(1)} м² хасагдана</span>
+                                </div>
+                            </div>
+                            <div>
+                                <label className="text-sm font-bold text-slate-700 dark:text-slate-300 block mb-2 flex items-center gap-2"><DoorOpen size={16} className="text-amber-500"/> Хаалганы тоо</label>
+                                <div className="flex items-center gap-4">
+                                    <button onClick={() => setDoors(Math.max(0, doors-1))} className="w-10 h-10 bg-slate-100 dark:bg-slate-800 rounded-xl font-bold text-lg hover:bg-slate-200 transition-colors">−</button>
+                                    <span className="text-2xl font-black w-8 text-center text-slate-900 dark:text-white">{doors}</span>
+                                    <button onClick={() => setDoors(doors+1)} className="w-10 h-10 bg-orange-600 rounded-xl font-bold text-lg text-white hover:bg-orange-700 transition-colors">+</button>
+                                    <span className="text-xs text-slate-400">× 2.0 м² = {(doors * 2.0).toFixed(1)} м² хасагдана</span>
+                                </div>
+                            </div>
+                            <div className="bg-slate-50 dark:bg-slate-800 rounded-xl p-3 text-xs text-slate-600 dark:text-slate-400">
+                                <strong>Нийт нээлхий:</strong> {((windows * 1.5) + (doors * 2.0)).toFixed(1)} м² → хана тооцооноос хасагдана
+                            </div>
+                        </div>
+                    )}
                 </div>
 
-                {/* Result */}
-                {result && (
-                    <div className="bg-slate-900 text-white p-8 rounded-3xl shadow-2xl animate-in slide-in-from-right flex flex-col h-full border border-slate-700">
-                        <div>
-                            <h3 className="text-sm font-bold mb-2 text-orange-500 uppercase tracking-wider">Урьдчилсан төсөв</h3>
-                            <div className="text-4xl font-black mb-1">{formatCurrency(result.totalCost)}</div>
-                            <p className="text-slate-400 text-xs mb-8">*Материал + Хийцийн багцаа үнэ</p>
-                        </div>
-                        
-                        <div className="space-y-4 mb-8 flex-1 overflow-y-auto max-h-[400px] pr-2">
-                            {result.details.map((d, i) => (
-                                <div key={i} className="flex justify-between items-start border-b border-slate-800 pb-4 last:border-0">
-                                    <div>
-                                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${d.category === 'Карказ' ? 'bg-blue-900 text-blue-300' : 'bg-green-900 text-green-300'}`}>{d.category}</span>
-                                        <div className="text-sm font-bold text-white mt-1">{d.material}</div>
-                                        {d.note && <div className="text-[10px] text-orange-400 mt-0.5">{d.note}</div>}
-                                    </div>
-                                    <div className="text-right">
-                                        <div className="font-bold text-sm">{d.qty.toLocaleString()} {d.unit}</div>
-                                        <div className="text-xs text-slate-400">{formatCurrency(d.price)}</div>
-                                    </div>
+                {/* Right: Result Panel */}
+                <div className="lg:col-span-2">
+                    {result ? (
+                        <div className="bg-slate-900 text-white rounded-3xl shadow-2xl border border-slate-700 overflow-hidden sticky top-24">
+                            {/* Header */}
+                            <div className="p-6 border-b border-slate-800">
+                                <div className="flex items-center justify-between mb-1">
+                                    <span className="text-[10px] font-bold text-orange-400 uppercase tracking-widest">Урьдчилсан төсөв</span>
+                                    <span className="text-[10px] text-slate-500">{new Date().toLocaleDateString('mn-MN')}</span>
                                 </div>
-                            ))}
+                                <div className="text-3xl font-black text-white">{formatCurrency(result.grandTotal)}</div>
+                                <p className="text-slate-500 text-[10px] mt-1">
+                                    {dims.l}×{dims.w}м, {floors} давхар
+                                    {includeLaborCost ? ' · Ажлын хөлс орсон' : ' · Зөвхөн материал'}
+                                </p>
+                            </div>
+
+                            {/* Cost Breakdown Bars */}
+                            <div className="p-5 border-b border-slate-800">
+                                <h4 className="text-xs font-bold text-slate-400 uppercase mb-3">Зардлын бүтэц</h4>
+                                <CostBar label="Карказ / Суурь" cost={structureCost} total={result.grandTotal} color="bg-blue-500" />
+                                {interiorCost > 0 && <CostBar label="Дотор засал" cost={interiorCost} total={result.grandTotal} color="bg-green-500" />}
+                                {result.laborCost > 0 && <CostBar label="Ажлын хөлс (35%)" cost={result.laborCost} total={result.grandTotal} color="bg-amber-500" />}
+                            </div>
+
+                            {/* Material Lines */}
+                            <div className="p-5 max-h-64 overflow-y-auto border-b border-slate-800 space-y-3">
+                                {result.details.map((d, i) => (
+                                    <div key={i} className="flex justify-between items-start text-sm">
+                                        <div className="flex-1 pr-3">
+                                            <CategoryBadge cat={d.category} />
+                                            <div className="text-white font-semibold text-xs mt-1 leading-tight">{d.material}</div>
+                                            {d.note && <div className="text-[10px] text-orange-400">{d.note}</div>}
+                                        </div>
+                                        <div className="text-right flex-shrink-0">
+                                            <div className="text-white text-xs font-bold">{d.qty.toLocaleString()} {d.unit}</div>
+                                            <div className="text-slate-400 text-[10px]">{formatCurrency(d.price)}</div>
+                                        </div>
+                                    </div>
+                                ))}
+                                {result.laborCost > 0 && (
+                                    <div className="flex justify-between items-center text-sm pt-2 border-t border-slate-800">
+                                        <div>
+                                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-900/60 text-amber-300">Ажлын хөлс</span>
+                                            <div className="text-white font-semibold text-xs mt-1">Угсралт, барилгын ажил</div>
+                                        </div>
+                                        <div className="text-right">
+                                            <div className="text-amber-400 text-xs font-bold">35%</div>
+                                            <div className="text-slate-400 text-[10px]">{formatCurrency(result.laborCost)}</div>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Footer Total + CTA */}
+                            <div className="p-5 space-y-3">
+                                <div className="flex justify-between items-center">
+                                    <span className="text-slate-400 text-sm">Нийт дүн</span>
+                                    <span className="text-xl font-black text-white">{formatCurrency(result.grandTotal)}</span>
+                                </div>
+                                <button className="w-full py-3 bg-orange-600 rounded-xl font-bold hover:bg-orange-700 transition-colors flex items-center justify-center gap-2 text-sm">
+                                    <FileText size={16}/> Үнийн санал авах (RFQ)
+                                </button>
+                                <button onClick={handlePrint} className="w-full py-2.5 bg-slate-800 rounded-xl font-bold hover:bg-slate-700 transition-colors flex items-center justify-center gap-2 text-xs text-slate-300">
+                                    <Printer size={14}/> Хэвлэх / PDF хадгалах
+                                </button>
+                            </div>
                         </div>
-                        
-                        <div className="mt-auto pt-4 border-t border-slate-800">
-                            <button className="w-full py-3 bg-orange-600 rounded-xl font-bold hover:bg-orange-700 transition-colors flex items-center justify-center gap-2">
-                                <FileText size={18} /> Үнийн санал авах (RFQ)
-                            </button>
+                    ) : (
+                        <div className="bg-slate-100 dark:bg-slate-900 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-3xl p-12 text-center">
+                            <Calculator size={48} className="mx-auto text-slate-300 mb-4" />
+                            <p className="text-slate-500 text-sm">Хэмжээ оруулах үед автоматаар тооцоолно</p>
                         </div>
-                    </div>
-                )}
+                    )}
+                </div>
             </div>
         </div>
     );
@@ -1178,14 +1350,298 @@ const RFQManager = ({ rfqs, onBack }) => (
     </div>
 );
 
+// --- DETAILED ESTIMATOR (Full Professional Version) ---
 const Estimator = ({ onBack }) => {
+    const SECTIONS = [
+        { id: 'concrete', label: 'Бетон / Суурь', icon: <Layers size={18}/>, color: 'purple' },
+        { id: 'masonry', label: 'Тоосго / Блок', icon: <BrickWall size={18}/>, color: 'orange' },
+        { id: 'roof', label: 'Дээвэр', icon: <Home size={18}/>, color: 'blue' },
+        { id: 'floor', label: 'Шал', icon: <Square size={18}/>, color: 'green' },
+        { id: 'wall_finish', label: 'Хана өнгөлгөө', icon: <PaintBucket size={18}/>, color: 'pink' },
+        { id: 'plumbing', label: 'Сантехник', icon: <Droplets size={18}/>, color: 'cyan' },
+        { id: 'electric', label: 'Цахилгаан', icon: <Zap size={18}/>, color: 'yellow' },
+    ];
+
+    const ITEMS = {
+        concrete: [
+            { id: 'c1', name: 'М200 Бетон', unit: 'м³', price: 220000, desc: 'Суурь, хавтан' },
+            { id: 'c2', name: 'М300 Бетон', unit: 'м³', price: 280000, desc: 'Дамнуурга, багана' },
+            { id: 'c3', name: 'Цемент (шуудай)', unit: 'шуудай', price: 24000, desc: '50кг, Портланд М400' },
+            { id: 'c4', name: 'Элс (шигшсэн)', unit: 'тн', price: 25000, desc: 'Карьерын' },
+            { id: 'c5', name: 'Хайрга', unit: 'тн', price: 28000, desc: '5-20мм фракц' },
+            { id: 'c6', name: 'Арматур Ф12', unit: 'тн', price: 2100000, desc: 'A500C' },
+            { id: 'c7', name: 'Арматур Ф10', unit: 'тн', price: 2080000, desc: 'A500C' },
+            { id: 'c8', name: 'Тор арматур', unit: 'м²', price: 8500, desc: '150×150 Ф6' },
+        ],
+        masonry: [
+            { id: 'm1', name: 'Хөнгөн блок', unit: 'ш', price: 4200, desc: '60×30×20см' },
+            { id: 'm2', name: 'МАК Евро блок', unit: 'ш', price: 11500, desc: '60×40×25см' },
+            { id: 'm3', name: 'Улаан тоосго', unit: 'ш', price: 680, desc: 'Стандарт M150' },
+            { id: 'm4', name: 'Хийц зуурмаг', unit: 'уут', price: 6500, desc: '25кг, M100' },
+            { id: 'm5', name: 'Дулаалгын блок EPS', unit: 'м²', price: 12000, desc: '10см зузаан' },
+        ],
+        roof: [
+            { id: 'r1', name: 'Металл профиль', unit: 'м²', price: 22000, desc: '0.35мм' },
+            { id: 'r2', name: 'Ондулин', unit: 'хавтан', price: 18000, desc: '3×1м' },
+            { id: 'r3', name: 'Шиферт', unit: 'м²', price: 28000, desc: '2-давхар' },
+            { id: 'r4', name: 'Мягк черепица', unit: 'м²', price: 45000, desc: 'Tegola' },
+            { id: 'r5', name: 'Модон дам нуруу', unit: 'м³', price: 650000, desc: 'Нарс' },
+            { id: 'r6', name: 'ОСП хавтан', unit: 'хавтан', price: 65000, desc: '18мм, 1.25×2.5м' },
+        ],
+        floor: [
+            { id: 'f1', name: 'Евро паркет', unit: 'м²', price: 45000, desc: '8мм, AC4' },
+            { id: 'f2', name: 'Ламинат', unit: 'м²', price: 28000, desc: '12мм' },
+            { id: 'f3', name: 'Плита 60×60', unit: 'м²', price: 35000, desc: 'Гладкий' },
+            { id: 'f4', name: 'Плита 30×30', unit: 'м²', price: 28000, desc: 'Ванны өрөө' },
+            { id: 'f5', name: 'Хальс (подложка)', unit: 'м²', price: 4000, desc: '3мм' },
+            { id: 'f6', name: 'Бетон хаяа', unit: 'м²', price: 8000, desc: 'М150 нивелир' },
+        ],
+        wall_finish: [
+            { id: 'w1', name: 'Dulux будаг', unit: 'л', price: 8500, desc: 'Эмульс' },
+            { id: 'w2', name: 'Солонгос обой', unit: 'рулон', price: 55000, desc: '1.06×10м' },
+            { id: 'w3', name: 'Гипскартон', unit: 'хавтан', price: 14500, desc: '12.5мм' },
+            { id: 'w4', name: 'Шпатлевка', unit: 'уут', price: 18000, desc: '20кг' },
+            { id: 'w5', name: 'Грунт', unit: 'л', price: 4500, desc: 'Глубокого пр.' },
+            { id: 'w6', name: 'Цагаан цемент', unit: 'уут', price: 12000, desc: '25кг' },
+        ],
+        plumbing: [
+            { id: 'p1', name: 'PPR хоолой Ф20', unit: 'м', price: 2500, desc: 'Халуун/хүйтэн ус' },
+            { id: 'p2', name: 'PPR хоолой Ф25', unit: 'м', price: 3200, desc: '' },
+            { id: 'p3', name: 'Ванн', unit: 'ш', price: 350000, desc: 'Стандарт 150см' },
+            { id: 'p4', name: 'Ариун цэврийн өрөөний иж', unit: 'иж', price: 180000, desc: 'WC+умывалник' },
+            { id: 'p5', name: 'Халуун усны бойлер', unit: 'ш', price: 450000, desc: '80л' },
+            { id: 'p6', name: 'Радиатор (хэсэг)', unit: 'хэсэг', price: 35000, desc: 'Биметалл' },
+        ],
+        electric: [
+            { id: 'e1', name: 'Зэс кабель 2.5мм', unit: 'м', price: 1800, desc: 'ВВГ 3×2.5' },
+            { id: 'e2', name: 'Зэс кабель 1.5мм', unit: 'м', price: 1200, desc: 'Гэрэлтүүлэг' },
+            { id: 'e3', name: 'Автомат 16А', unit: 'ш', price: 18000, desc: 'ABB' },
+            { id: 'e4', name: 'Розетка (Legrand)', unit: 'ш', price: 12000, desc: 'Хамгаалалттай' },
+            { id: 'e5', name: 'Унтраалга', unit: 'ш', price: 8000, desc: 'Нэг товч' },
+            { id: 'e6', name: 'Тарилгын самбар', unit: 'ш', price: 85000, desc: '12 автомат' },
+            { id: 'e7', name: 'LED гэрэл', unit: 'ш', price: 25000, desc: '12W' },
+        ],
+    };
+
+    const [activeSection, setActiveSection] = useState('concrete');
+    const [quantities, setQuantities] = useState({});
+    const [includeLaborPct, setIncludeLaborPct] = useState(35);
+    const [includeLabor, setIncludeLabor] = useState(true);
+    const [projectName, setProjectName] = useState('Миний Төсөл');
+
+    const setQty = (itemId, val) => {
+        const v = parseFloat(val) || 0;
+        setQuantities(prev => ({ ...prev, [itemId]: v }));
+    };
+
+    const allItems = Object.values(ITEMS).flat();
+    const usedItems = allItems.filter(item => (quantities[item.id] || 0) > 0);
+    const materialTotal = usedItems.reduce((sum, item) => sum + (quantities[item.id] * item.price), 0);
+    const laborTotal = includeLabor ? Math.round(materialTotal * (includeLaborPct / 100)) : 0;
+    const grandTotal = materialTotal + laborTotal;
+
+    const sectionTotal = (sectionId) => {
+        return (ITEMS[sectionId] || []).reduce((sum, item) => sum + ((quantities[item.id] || 0) * item.price), 0);
+    };
+
+    const colorMap = {
+        purple: 'bg-purple-600', orange: 'bg-orange-600', blue: 'bg-blue-600',
+        green: 'bg-green-600', pink: 'bg-pink-600', cyan: 'bg-cyan-600', yellow: 'bg-yellow-500'
+    };
     return (
-        <div className="animate-in fade-in zoom-in-95 max-w-4xl mx-auto py-8 px-4 sm:px-0">
-             <button onClick={onBack} className="flex items-center text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white mb-6 text-sm font-bold bg-white dark:bg-slate-800 px-4 py-2 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 transition-colors"><ArrowLeft size={18} className="mr-2"/> Буцах</button>
-             <div className="bg-white dark:bg-slate-900 rounded-[2rem] p-8 shadow-xl border border-slate-100 dark:border-slate-800">
-                 <h2 className="font-bold text-2xl text-slate-900 dark:text-white mb-4">Нарийвчилсан тооцоолуур</h2>
-                 <p className="text-slate-500">Энд та барилгын хийц тус бүрээр нарийн тооцоо хийх боломжтой.</p>
-             </div>
+        <div className="animate-in fade-in zoom-in-95 max-w-7xl mx-auto py-8 px-2 sm:px-0">
+            <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+                <div className="flex items-center gap-3">
+                    <button onClick={onBack} className="p-2 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:text-white transition-colors"><ArrowLeft size={20}/></button>
+                    <div>
+                        <h2 className="text-2xl font-black text-slate-900 dark:text-white">Нарийвчилсан тооцоолуур</h2>
+                        <p className="text-xs text-slate-500">Хийц тус бүрээр, материал нэг бүрээр</p>
+                    </div>
+                </div>
+                <div className="flex items-center gap-2">
+                    <input 
+                        value={projectName} 
+                        onChange={e => setProjectName(e.target.value)}
+                        className="text-sm px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:border-orange-500 outline-none"
+                        placeholder="Төслийн нэр"
+                    />
+                    <button onClick={() => window.print()} className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 transition-colors">
+                        <Printer size={16}/> Хэвлэх
+                    </button>
+                </div>
+            </div>
+
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+                {/* Left: Section + Items */}
+                <div className="xl:col-span-2 space-y-4">
+                    {/* Section Tabs */}
+                    <div className="flex gap-2 overflow-x-auto pb-2">
+                        {SECTIONS.map(sec => {
+                            const secTotal = sectionTotal(sec.id);
+                            const isActive = activeSection === sec.id;
+                            return (
+                                <button
+                                    key={sec.id}
+                                    onClick={() => setActiveSection(sec.id)}
+                                    className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border transition-all ${isActive ? `${colorMap[sec.color]} text-white border-transparent shadow-lg` : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-slate-300'}`}
+                                >
+                                    {sec.icon}
+                                    <span>{sec.label}</span>
+                                    {secTotal > 0 && <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${isActive ? 'bg-white/20' : 'bg-orange-100 text-orange-700'}`}>{Math.round(secTotal/1000000*10)/10}M</span>}
+                                </button>
+                            );
+                        })}
+                    </div>
+
+                    {/* Item Table */}
+                    <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
+                        <div className={`px-5 py-3 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center`}>
+                            <h3 className="font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                                {SECTIONS.find(s => s.id === activeSection)?.icon}
+                                {SECTIONS.find(s => s.id === activeSection)?.label}
+                            </h3>
+                            {sectionTotal(activeSection) > 0 && (
+                                <span className="text-sm font-bold text-orange-600">{formatCurrency(sectionTotal(activeSection))}</span>
+                            )}
+                        </div>
+                        <div className="divide-y divide-slate-100 dark:divide-slate-800">
+                            {(ITEMS[activeSection] || []).map(item => {
+                                const qty = quantities[item.id] || 0;
+                                const total = qty * item.price;
+                                return (
+                                    <div key={item.id} className={`flex items-center gap-4 px-5 py-3.5 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors ${qty > 0 ? 'bg-orange-50/50 dark:bg-orange-900/10' : ''}`}>
+                                        <div className="flex-1 min-w-0">
+                                            <div className="font-semibold text-slate-900 dark:text-white text-sm">{item.name}</div>
+                                            <div className="text-xs text-slate-400">{item.desc} · {formatCurrency(item.price)}/{item.unit}</div>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <button onClick={() => setQty(item.id, Math.max(0, qty - 1))} className="w-7 h-7 bg-slate-100 dark:bg-slate-800 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-200 text-sm font-bold transition-colors">−</button>
+                                            <input
+                                                type="number"
+                                                min="0"
+                                                value={qty || ''}
+                                                placeholder="0"
+                                                onChange={e => setQty(item.id, e.target.value)}
+                                                className="w-20 text-center p-1.5 border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm font-bold focus:border-orange-500 outline-none"
+                                            />
+                                            <span className="text-xs text-slate-400 w-10">{item.unit}</span>
+                                            <button onClick={() => setQty(item.id, qty + 1)} className="w-7 h-7 bg-orange-600 rounded-lg text-white hover:bg-orange-700 text-sm font-bold transition-colors">+</button>
+                                        </div>
+                                        <div className="w-28 text-right">
+                                            <span className={`text-sm font-bold ${total > 0 ? 'text-orange-600' : 'text-slate-300 dark:text-slate-700'}`}>
+                                                {total > 0 ? formatCurrency(total) : '—'}
+                                            </span>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                </div>
+
+                {/* Right: Summary */}
+                <div className="space-y-4">
+                    {/* Total Card */}
+                    <div className="bg-slate-900 text-white rounded-2xl p-6 shadow-2xl border border-slate-700">
+                        <div className="text-[10px] font-bold text-orange-400 uppercase tracking-widest mb-1">{projectName}</div>
+                        <div className="text-3xl font-black mb-1">{formatCurrency(grandTotal)}</div>
+                        <div className="text-slate-500 text-xs mb-5">Нийт өртөг</div>
+                        
+                        {/* Section Breakdown */}
+                        <div className="space-y-2 mb-5">
+                            {SECTIONS.map(sec => {
+                                const st = sectionTotal(sec.id);
+                                if (st === 0) return null;
+                                const pct = grandTotal > 0 ? Math.round((st / grandTotal) * 100) : 0;
+                                return (
+                                    <div key={sec.id}>
+                                        <div className="flex justify-between text-xs mb-1">
+                                            <span className="text-slate-400 flex items-center gap-1">{sec.icon}{sec.label}</span>
+                                            <span className="text-white font-bold">{formatCurrency(st)}</span>
+                                        </div>
+                                        <div className="h-1.5 bg-slate-800 rounded-full">
+                                            <div className={`h-full rounded-full ${colorMap[sec.color]} transition-all duration-500`} style={{ width: `${pct}%` }} />
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                            {laborTotal > 0 && (
+                                <div>
+                                    <div className="flex justify-between text-xs mb-1">
+                                        <span className="text-slate-400 flex items-center gap-1"><Hammer size={14}/>Ажлын хөлс</span>
+                                        <span className="text-amber-400 font-bold">{formatCurrency(laborTotal)}</span>
+                                    </div>
+                                    <div className="h-1.5 bg-slate-800 rounded-full">
+                                        <div className="h-full rounded-full bg-amber-500 transition-all duration-500" style={{ width: `${grandTotal > 0 ? Math.round(laborTotal/grandTotal*100) : 0}%` }} />
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Labor toggle */}
+                        <div className="border-t border-slate-800 pt-4 space-y-3">
+                            <label className="flex items-center gap-2 cursor-pointer">
+                                <input type="checkbox" checked={includeLabor} onChange={e => setIncludeLabor(e.target.checked)} className="accent-orange-600 w-4 h-4" />
+                                <span className="text-sm font-bold">Ажлын хөлс нэмэх</span>
+                            </label>
+                            {includeLabor && (
+                                <div>
+                                    <div className="flex justify-between text-xs text-slate-400 mb-1">
+                                        <span>Материалын % хувь</span>
+                                        <span className="font-bold text-amber-400">{includeLaborPct}%</span>
+                                    </div>
+                                    <input type="range" min="15" max="60" step="5" value={includeLaborPct}
+                                        onChange={e => setIncludeLaborPct(parseInt(e.target.value))}
+                                        className="w-full accent-orange-600"
+                                    />
+                                    <div className="flex justify-between text-[10px] text-slate-600 mt-0.5"><span>15% (энгийн)</span><span>60% (нарийн)</span></div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Used items list */}
+                    {usedItems.length > 0 && (
+                        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
+                            <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center">
+                                <h3 className="font-bold text-slate-900 dark:text-white text-sm">Сонгогдсон материал</h3>
+                                <span className="text-xs text-slate-400">{usedItems.length} зүйл</span>
+                            </div>
+                            <div className="divide-y divide-slate-100 dark:divide-slate-800 max-h-72 overflow-y-auto">
+                                {usedItems.map(item => (
+                                    <div key={item.id} className="flex justify-between items-center px-4 py-2.5 text-sm">
+                                        <div>
+                                            <div className="font-semibold text-slate-900 dark:text-white text-xs">{item.name}</div>
+                                            <div className="text-[10px] text-slate-400">{quantities[item.id]} {item.unit}</div>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-orange-600 font-bold text-xs">{formatCurrency(quantities[item.id] * item.price)}</span>
+                                            <button onClick={() => setQty(item.id, 0)} className="w-5 h-5 bg-red-100 dark:bg-red-900/30 text-red-500 rounded text-xs hover:bg-red-200 transition-colors">×</button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                            <div className="px-4 py-3 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 flex justify-between">
+                                <span className="text-sm font-bold text-slate-900 dark:text-white">Материал нийт</span>
+                                <span className="font-black text-orange-600">{formatCurrency(materialTotal)}</span>
+                            </div>
+                        </div>
+                    )}
+
+                    {usedItems.length === 0 && (
+                        <div className="bg-slate-50 dark:bg-slate-900 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-2xl p-8 text-center">
+                            <Calculator size={36} className="mx-auto text-slate-300 mb-3" />
+                            <p className="text-slate-500 text-sm">Материалын тоо хэмжээг оруулснаар нийт өртөг автоматаар тооцогдоно</p>
+                        </div>
+                    )}
+
+                    {usedItems.length > 0 && (
+                        <button className="w-full py-3.5 bg-orange-600 text-white font-bold rounded-xl shadow-lg hover:bg-orange-700 transition-colors flex items-center justify-center gap-2">
+                            <FileText size={18}/> Үнийн санал авах (RFQ)
+                        </button>
+                    )}
+                </div>
+            </div>
         </div>
     );
 };
@@ -1267,7 +1723,7 @@ export default function App() {
     const [darkMode, setDarkMode] = useState(false);
     const [userRole, setUserRole] = useState('user'); // 'user', 'seller'
     const [isSellerLoggedIn, setIsSellerLoggedIn] = useState(false);
-    const [rfqs, setRfqs] = useState([]);
+    const [rfqs] = useState([]); // populated via API in future
     const [initialTemplate, setInitialTemplate] = useState(null);
 
     const [allProducts, setAllProducts] = useState(Object.values(INITIAL_SUPPLIERS).flat());
@@ -1275,6 +1731,7 @@ export default function App() {
     // Auth Init
     useEffect(() => {
         const initAuth = async () => {
+            // eslint-disable-next-line no-undef
             if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
                 // Handle custom token if needed
             } else {
