@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import BuildEstimator from './BuildEstimator.jsx';
 import { initializeApp } from 'firebase/app';
 import { getAuth, signInAnonymously } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
@@ -19,12 +20,23 @@ import {
   ThumbsUp, MessageCircle, HelpCircle
 } from 'lucide-react';
 
-// --- Firebase Stub (For Compilation) ---
-// eslint-disable-next-line no-undef
-const firebaseConfig = JSON.parse(__firebase_config);
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-getFirestore(app); // initialized for future use
+// --- Firebase Init (тохиргоо байхгүй бол алгасна — сайт унахгүй) ---
+let app = null;
+let auth = null;
+try {
+    // eslint-disable-next-line no-undef
+    const cfgStr = typeof __firebase_config !== 'undefined' ? __firebase_config : (import.meta.env.VITE_FIREBASE_CONFIG || null);
+    if (cfgStr) {
+        const firebaseConfig = typeof cfgStr === 'string' ? JSON.parse(cfgStr) : cfgStr;
+        app = initializeApp(firebaseConfig);
+        auth = getAuth(app);
+        getFirestore(app); // initialized for future use
+    } else {
+        console.warn('Firebase тохиргоо олдсонгүй — auth/firestore идэвхгүй горимд ажиллана.');
+    }
+} catch (e) {
+    console.warn('Firebase эхлүүлж чадсангүй:', e);
+}
 
 // ==========================================
 // 1. DATA CONSTANTS & LOGIC
@@ -1735,7 +1747,7 @@ export default function App() {
             if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
                 // Handle custom token if needed
             } else {
-                await signInAnonymously(auth);
+                if (auth) await signInAnonymously(auth);
             }
         };
         initAuth();
@@ -1789,7 +1801,7 @@ export default function App() {
                             {view === 'services' && <ServicesDashboard onNavigate={setView} />}
                             {view === 'china' && <ChinaImportScreen onBack={() => handleNav('services')} />}
                             {view === 'rental' && <RentalScreen onBack={() => handleNav('services')} />}
-                            {view === 'estimator' && <Estimator onBack={() => setView('home')} />}
+                            {view === 'estimator' && <BuildEstimator onBack={() => setView('home')} />}
                         </>
                     )}
                 </main>
