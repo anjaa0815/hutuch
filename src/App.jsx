@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+﻿import React, { useState, useEffect, useMemo } from 'react';
 import BuildEstimator from './BuildEstimator.jsx';
 import { initializeApp } from 'firebase/app';
 import { getAuth, signInAnonymously } from 'firebase/auth';
@@ -357,6 +357,7 @@ const Header = ({ cartCount, onNavigate, onOpenCart, darkMode, toggleDarkMode, u
                     <>
                         <button onClick={() => onNavigate('home')} className="text-sm font-bold text-slate-600 dark:text-slate-300 hover:text-orange-600 transition-colors">Нүүр</button>
                         <button onClick={() => onNavigate('builder')} className="text-sm font-bold text-slate-600 dark:text-slate-300 hover:text-orange-600 transition-colors">Төлөвлөгч</button>
+                        <button onClick={() => onNavigate('estimator')} className="text-sm font-bold text-orange-600 hover:text-orange-700 transition-colors">Тооцоолуур</button>
                         <button onClick={() => onNavigate('advice')} className="text-sm font-bold text-slate-600 dark:text-slate-300 hover:text-orange-600 transition-colors">Зөвлөгөө</button>
                         <button onClick={() => onNavigate('rfq')} className="text-sm font-bold text-slate-600 dark:text-slate-300 hover:text-orange-600 transition-colors">Үнийн санал</button>
                     </>
