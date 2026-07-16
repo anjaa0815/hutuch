@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import BuildEstimator from './BuildEstimator.jsx';
 import { initializeApp } from 'firebase/app';
 import { getAuth, signInAnonymously } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
@@ -1790,7 +1789,7 @@ export default function App() {
                             {view === 'services' && <ServicesDashboard onNavigate={setView} />}
                             {view === 'china' && <ChinaImportScreen onBack={() => handleNav('services')} />}
                             {view === 'rental' && <RentalScreen onBack={() => handleNav('services')} />}
-                            {view === 'estimator' && <BuildEstimator onBack={() => setView('home')} />}
+                            {view === 'estimator' && <Estimator onBack={() => setView('home')} />}
                         </>
                     )}
                 </main>
