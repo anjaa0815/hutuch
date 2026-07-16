@@ -934,16 +934,16 @@ function RoomCard({ room, index, selected, onSelect, onChange, onDelete }) {
 }
 
 /* ============================================================ */
-export default function BuildEstimator({ onBack }) {
+export default function BuildEstimator({ onBack, preset }) {
   const [tab, setTab] = useState("plan");
   const [view, setView] = useState("2d");
-  const [rooms, setRooms] = useState(DEFAULT_ROOMS);
-  const [settings, setSettings] = useState(DEFAULT_SETTINGS);
-  const [selections, setSelections] = useState(DEFAULT_SELECTIONS);
+  const [rooms, setRooms] = useState(preset?.rooms || DEFAULT_ROOMS);
+  const [settings, setSettings] = useState(preset?.settings ? { ...DEFAULT_SETTINGS, ...preset.settings } : DEFAULT_SETTINGS);
+  const [selections, setSelections] = useState(preset?.selections ? { ...DEFAULT_SELECTIONS, ...preset.selections } : DEFAULT_SELECTIONS);
   const [norms, setNorms] = useState(DEFAULT_NORMS);
   const [prices, setPrices] = useState(DEFAULT_PRICES);
   const [laborNorms, setLaborNorms] = useState(DEFAULT_LABOR);
-  const [mep, setMep] = useState(DEFAULT_MEP);
+  const [mep, setMep] = useState(preset?.mep ? { ...DEFAULT_MEP, ...preset.mep } : DEFAULT_MEP);
   const [quote, setQuote] = useState({
     company: "Хөтөч · hutuch.com", phone: "", email: "",
     client: "", project: "Амины орон сууц", number: "Т-" + new Date().getFullYear() + "-001",
@@ -1454,3 +1454,11 @@ export default function BuildEstimator({ onBack }) {
     </div>
   );
 }
+
+/* Хурдан тооцоолуур (QuickPlanner) зэрэг бусад хэсэгт хуваалцах хөдөлгүүр */
+export {
+  SYSTEMS, COMMON_ITEMS,
+  DEFAULT_NORMS, DEFAULT_PRICES, DEFAULT_LABOR,
+  DEFAULT_SETTINGS, DEFAULT_SELECTIONS, DEFAULT_MEP,
+  computeGeometry, rateOf, rect, fmt, fmtT,
+};

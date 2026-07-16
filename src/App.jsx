@@ -1,5 +1,6 @@
-﻿import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import BuildEstimator from './BuildEstimator.jsx';
+import QuickPlanner from './QuickPlanner.jsx';
 import { initializeApp } from 'firebase/app';
 import { getAuth, signInAnonymously } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
@@ -1729,7 +1730,8 @@ const HomeView = ({ onNavigate, onSelectCategory, onStartTemplate }) => (
 
 // --- MAIN APP ---
 export default function App() {
-    const [view, setView] = useState('home'); 
+    const [view, setView] = useState('home');
+    const [estimatorPreset, setEstimatorPreset] = useState(null); 
     const [selectedCat, setSelectedCat] = useState(null); 
     const [cart, setCart] = useState([]);
     const [isCartOpen, setIsCartOpen] = useState(false);
@@ -1794,7 +1796,7 @@ export default function App() {
                         // USER VIEWS
                         <>
                             {view === 'home' && <HomeView onNavigate={handleNav} onSelectCategory={(id) => { setSelectedCat(id); setView('category'); }} onStartTemplate={handleStartTemplate} />}
-                            {view === 'builder' && <VisualBuilderView onBack={() => setView('home')} template={initialTemplate} />}
+                            {view === 'builder' && <QuickPlanner onBack={() => setView('home')} template={initialTemplate} onAdvanced={(p) => { setEstimatorPreset(p); setView('estimator'); }} />}
                             {view === 'advice' && <AdviceForumView onBack={() => setView('home')} />}
                             {view === 'rfq' && <RFQManager rfqs={rfqs} onBack={() => setView('home')} />}
                             {view === 'category' && <CategoryDetail categoryId={selectedCat} groupId={selectedCat} onBack={() => setView('home')} onAddToCart={handleAddToCart} allProducts={allProducts} />}
@@ -1802,7 +1804,7 @@ export default function App() {
                             {view === 'services' && <ServicesDashboard onNavigate={setView} />}
                             {view === 'china' && <ChinaImportScreen onBack={() => handleNav('services')} />}
                             {view === 'rental' && <RentalScreen onBack={() => handleNav('services')} />}
-                            {view === 'estimator' && <BuildEstimator onBack={() => setView('home')} />}
+                            {view === 'estimator' && <BuildEstimator onBack={() => setView('home')} preset={estimatorPreset} />}
                         </>
                     )}
                 </main>
