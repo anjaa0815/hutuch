@@ -3,9 +3,9 @@ import BuildEstimator from './BuildEstimator.jsx';
 import QuickPlanner from './QuickPlanner.jsx';
 import EngineeringTools from './EngineeringTools.jsx';
 import AdviceChat from './AdviceChat.jsx';
-import { initializeApp } from 'firebase/app';
-import { getAuth, signInAnonymously } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
+import { signInAnonymously } from 'firebase/auth';
+import { app, auth, db } from './firebase.js';
+import { AuthButton } from './AuthPanel.jsx';
 import { 
   Calculator, BrickWall, PaintBucket, Ruler, Info, 
   Menu, X, Grid, Cylinder, Box, Scroll, Coins, 
@@ -23,23 +23,8 @@ import {
   ThumbsUp, MessageCircle, HelpCircle
 } from 'lucide-react';
 
-// --- Firebase Init (тохиргоо байхгүй бол алгасна — сайт унахгүй) ---
-let app = null;
-let auth = null;
-try {
-    // eslint-disable-next-line no-undef
-    const cfgStr = typeof __firebase_config !== 'undefined' ? __firebase_config : (import.meta.env.VITE_FIREBASE_CONFIG || null);
-    if (cfgStr) {
-        const firebaseConfig = typeof cfgStr === 'string' ? JSON.parse(cfgStr) : cfgStr;
-        app = initializeApp(firebaseConfig);
-        auth = getAuth(app);
-        getFirestore(app); // initialized for future use
-    } else {
-        console.warn('Firebase тохиргоо олдсонгүй — auth/firestore идэвхгүй горимд ажиллана.');
-    }
-} catch (e) {
-    console.warn('Firebase эхлүүлж чадсангүй:', e);
-}
+// Firebase init нь ./firebase.js модульд нэгдсэн (app, auth, db)
+void app; void db;
 
 // ==========================================
 // 1. DATA CONSTANTS & LOGIC
@@ -370,6 +355,7 @@ const Header = ({ cartCount, onNavigate, onOpenCart, darkMode, toggleDarkMode, u
                 )}
             </nav>
             <div className="flex items-center gap-3">
+                <AuthButton />
                 <button onClick={() => setUserRole(userRole === 'user' ? 'seller' : 'user')} className={`p-2.5 rounded-xl transition-colors flex items-center gap-2 text-xs font-bold ${userRole === 'seller' ? 'bg-orange-100 text-orange-700' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'}`}>
                     {userRole === 'user' ? <User size={16}/> : <Store size={16}/>}
                     <span className="hidden sm:inline">{userRole === 'user' ? 'Хэрэглэгч' : 'Борлуулагч'}</span>
