@@ -1,0 +1,8 @@
+{
+  "name": "hutuch-functions",
+  "engines": { "node": "20" },
+  "main": "index.js",
+  "dependencies": {
+    "firebase-functions": "^6.1.0"
+  }
+}
