@@ -352,6 +352,124 @@ function PlasterPaint() {
   );
 }
 
+/* ============ 9. Геометр — талбай & эзлэхүүн ============ */
+const SHAPES = [
+  { id: "rect", mode: "area", name: "Тэгш өнцөгт", ins: [["a", "Урт", "м"], ["b", "Өргөн", "м"]], f: (v) => v.a * v.b, formula: "S = a × b" },
+  { id: "tri", mode: "area", name: "Гурвалжин", ins: [["a", "Суурь", "м"], ["h", "Өндөр", "м"]], f: (v) => v.a * v.h / 2, formula: "S = a × h / 2" },
+  { id: "trap", mode: "area", name: "Трапец", ins: [["a", "Дээд тал", "м"], ["b", "Доод тал", "м"], ["h", "Өндөр", "м"]], f: (v) => (v.a + v.b) / 2 * v.h, formula: "S = (a+b)/2 × h" },
+  { id: "circle", mode: "area", name: "Тойрог", ins: [["d", "Диаметр", "м"]], f: (v) => Math.PI * v.d * v.d / 4, formula: "S = πd²/4" },
+  { id: "ring", mode: "area", name: "Цагираг (хоолойн огтлол)", ins: [["D", "Гадна диаметр", "м"], ["d", "Дотор диаметр", "м"]], f: (v) => Math.PI * (v.D * v.D - v.d * v.d) / 4, formula: "S = π(D²−d²)/4" },
+  { id: "box", mode: "vol", name: "Хайрцаг / цутгалт", ins: [["a", "Урт", "м"], ["b", "Өргөн", "м"], ["h", "Өндөр", "м"]], f: (v) => v.a * v.b * v.h, formula: "V = a × b × h" },
+  { id: "cyl", mode: "vol", name: "Цилиндр (багана, худаг)", ins: [["d", "Диаметр", "м"], ["h", "Өндөр", "м"]], f: (v) => Math.PI * v.d * v.d / 4 * v.h, formula: "V = πd²/4 × h" },
+  { id: "cone", mode: "vol", name: "Конус (овоолго)", ins: [["d", "Суурийн диаметр", "м"], ["h", "Өндөр", "м"]], f: (v) => Math.PI * v.d * v.d / 4 * v.h / 3, formula: "V = πd²h/12" },
+  { id: "sphere", mode: "vol", name: "Бөмбөрцөг", ins: [["d", "Диаметр", "м"]], f: (v) => Math.PI * Math.pow(v.d, 3) / 6, formula: "V = πd³/6" },
+  { id: "trench", mode: "vol", name: "Траншей (налуу ханатай)", ins: [["a", "Дээд өргөн", "м"], ["b", "Доод өргөн", "м"], ["h", "Гүн", "м"], ["L", "Урт", "м"]], f: (v) => (v.a + v.b) / 2 * v.h * v.L, formula: "V = (a+b)/2 × h × L" },
+  { id: "prism", mode: "vol", name: "Призм (огтлол × урт)", ins: [["S", "Огтлолын талбай", "м²"], ["L", "Урт", "м"]], f: (v) => v.S * v.L, formula: "V = S × L" },
+];
+function Geometry() {
+  const [mode, setMode] = useState("area");
+  const [shapeId, setShapeId] = useState("rect");
+  const [vals, setVals] = useState({ a: 4, b: 3, h: 2, d: 1, D: 1.2, L: 10, S: 1 });
+  const shapes = SHAPES.filter((s) => s.mode === mode);
+  const shape = SHAPES.find((s) => s.id === shapeId && s.mode === mode) || shapes[0];
+  const result = shape.f(vals);
+  return (
+    <div>
+      <div className="mb-3 flex gap-1 rounded-xl bg-slate-100 dark:bg-slate-800 p-1">
+        {[["area", "▦ Талбай (м²)"], ["vol", "◻ Эзлэхүүн (м³)"]].map(([m, l]) => (
+          <button key={m} onClick={() => { setMode(m); setShapeId(SHAPES.find((s) => s.mode === m).id); }}
+            className={`flex-1 rounded-lg px-3 py-1.5 text-sm font-bold transition ${mode === m ? "bg-white dark:bg-slate-900 text-orange-600 shadow" : "text-slate-500"}`}>{l}</button>
+        ))}
+      </div>
+      <div className="mb-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
+        {shapes.map((s) => (
+          <button key={s.id} onClick={() => setShapeId(s.id)}
+            className={`rounded-xl border px-3 py-2 text-left text-sm font-medium transition ${shape.id === s.id
+              ? "border-orange-500 bg-orange-50 dark:bg-orange-950/30 text-orange-700 dark:text-orange-400"
+              : "border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-orange-300"}`}>
+            {s.name}
+          </button>
+        ))}
+      </div>
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        {shape.ins.map(([k, label, unit]) => (
+          <Num key={k} label={label} unit={unit} value={vals[k]} step={0.1}
+            onChange={(v) => setVals((x) => ({ ...x, [k]: v }))} />
+        ))}
+      </div>
+      <div className="mt-4">
+        <Res label={`${shape.name} — ${shape.formula}`} value={`${fmt(result, 3)} ${mode === "area" ? "м²" : "м³"}`} hi />
+      </div>
+      {mode === "vol" && (
+        <div className="mt-2 grid gap-2 sm:grid-cols-2">
+          <Res label="Бетон бол (2400 кг/м³)" value={`${fmt(result * 2.4, 2)} тн`} />
+          <Res label="Шороо бол (1600 кг/м³, сийрэгжилт ×1.25)" value={`${fmt(result * 1.25, 2)} м³ тээвэрлэх`} />
+        </div>
+      )}
+      <Note>Нийлмэл хэлбэрийг хэсэг болгон хувааж тус бүрийг бодоод нэмээрэй. Траншейн налуу ханын дээд өргөн = доод өргөн + 2 × гүн × налуугийн коэфф (сул хөрсөнд 0.5–1).</Note>
+    </div>
+  );
+}
+
+/* ============ 10. Нэгж хөрвүүлэгч ============ */
+const CONV = [
+  { id: "len", name: "Урт", units: [["мм", 0.001], ["см", 0.01], ["м", 1], ["км", 1000], ["инч", 0.0254], ["фут", 0.3048]] },
+  { id: "area", name: "Талбай", units: [["см²", 1e-4], ["м²", 1], ["га", 1e4], ["км²", 1e6], ["фут²", 0.09290304], ["акр", 4046.86]] },
+  { id: "vol", name: "Эзлэхүүн", units: [["мл", 1e-6], ["л", 1e-3], ["м³", 1], ["фут³", 0.0283168], ["галлон (US)", 0.00378541]] },
+  { id: "mass", name: "Жин", units: [["г", 0.001], ["кг", 1], ["тн", 1000], ["фунт", 0.453592], ["унц", 0.0283495]] },
+  { id: "press", name: "Даралт", units: [["Па", 0.001], ["кПа", 1], ["МПа", 1000], ["бар", 100], ["атм", 101.325], ["psi", 6.89476], ["кгс/см²", 98.0665]] },
+  { id: "force", name: "Хүч", units: [["Н", 0.001], ["кН", 1], ["кгс", 0.00980665], ["тс", 9.80665]] },
+  { id: "energy", name: "Эрчим хүч", units: [["Ж", 0.001], ["кЖ", 1], ["кВт·ц", 3600], ["ккал", 4.1868], ["БТУ", 1.05506]] },
+  { id: "power", name: "Чадал", units: [["Вт", 0.001], ["кВт", 1], ["мор.хүч (hp)", 0.7457], ["ккал/ц", 0.001163], ["БТУ/ц", 0.000293071]] },
+  { id: "flow", name: "Урсац", units: [["л/с", 1], ["л/мин", 1 / 60], ["м³/ц", 1000 / 3600], ["м³/с", 1000]] },
+  { id: "temp", name: "Температур", units: [["°C"], ["°F"], ["K"]] },
+];
+const tempConv = (v, from) => {
+  const c = from === "°C" ? v : from === "°F" ? (v - 32) / 1.8 : v - 273.15;
+  return { "°C": c, "°F": c * 1.8 + 32, "K": c + 273.15 };
+};
+function Converter() {
+  const [cat, setCat] = useState("mass");
+  const [val, setVal] = useState(1);
+  const [from, setFrom] = useState("кг");
+  const c = CONV.find((x) => x.id === cat);
+  const fromOk = c.units.some(([u]) => u === from) ? from : c.units[0][0];
+  const results = useMemo(() => {
+    if (cat === "temp") {
+      const t = tempConv(val, fromOk);
+      return c.units.map(([u]) => [u, t[u]]);
+    }
+    const base = val * c.units.find(([u]) => u === fromOk)[1];
+    return c.units.map(([u, k]) => [u, base / k]);
+  }, [cat, val, fromOk, c]);
+  return (
+    <div>
+      <div className="mb-3 flex flex-wrap gap-1.5">
+        {CONV.map((x) => (
+          <button key={x.id} onClick={() => { setCat(x.id); setFrom(x.units[0][0]); }}
+            className={`rounded-full px-3 py-1 text-xs font-bold transition ${cat === x.id
+              ? "bg-orange-600 text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200"}`}>
+            {x.name}
+          </button>
+        ))}
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <Num label="Утга" value={val} onChange={setVal} step={0.1} min={cat === "temp" ? -273 : 0} />
+        <Sel label="Нэгж" value={fromOk} onChange={setFrom} options={c.units.map(([u]) => [u, u])} />
+      </div>
+      <div className="mt-4 grid gap-2 sm:grid-cols-2">
+        {results.map(([u, v]) => (
+          <Res key={u} label={u} hi={u === fromOk}
+            value={Math.abs(v) >= 1e7 || (Math.abs(v) < 1e-4 && v !== 0)
+              ? v.toExponential(4)
+              : fmt(v, Math.abs(v) < 1 ? 6 : 4)} />
+        ))}
+      </div>
+      <Note>Оруулсан утга бүх нэгж рүү зэрэг хөрвөнө. Даралтын кгс/см² = техникийн атмосфер; хүчний тс = тонн-хүч. Температур шугаман биш тул томьёогоор (°F = °C×1.8+32, K = °C+273.15).</Note>
+    </div>
+  );
+}
+
 /* ============================================================ */
 const TOOLS = [
   { id: "heat", icon: "🌡", name: "Дулаан алдагдал", desc: "Зуухны хүч, жилийн халаалтын зардал", comp: HeatLoss, cat: "Халаалт" },
@@ -362,6 +480,8 @@ const TOOLS = [
   { id: "rebar", icon: "🔩", name: "Арматурын жин", desc: "d²/162 — кг/м, нийт тонн", comp: Rebar, cat: "Барилга" },
   { id: "brick", icon: "🧱", name: "Тоосгон өрлөг", desc: "Тоосго, зуурмаг, цемент, элс", comp: Brick, cat: "Барилга" },
   { id: "plaster", icon: "🎨", name: "Шавардлага & будаг", desc: "Зуурмаг, цемент, будгийн литр", comp: PlasterPaint, cat: "Засал" },
+  { id: "geom", icon: "📐", name: "Талбай & эзлэхүүн", desc: "11 хэлбэрийн м², м³ — траншей, багана, овоолго", comp: Geometry, cat: "Хэрэгсэл" },
+  { id: "conv", icon: "🔄", name: "Нэгж хөрвүүлэгч", desc: "Урт, жин, даралт, чадал… 10 төрлийн нэгж", comp: Converter, cat: "Хэрэгсэл" },
 ];
 
 export default function EngineeringTools({ onBack }) {
