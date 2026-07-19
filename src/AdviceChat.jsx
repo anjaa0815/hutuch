@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { auth } from "./firebase.js";
+import { usePro, ProUpgradeModal } from "./ProMembership.jsx";
 
 /* ============================================================
    ХӨТӨЧ — AI Зөвлөх чат (Зөвлөгөө хэсэг)
@@ -24,6 +25,8 @@ export default function AdviceChat() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
   const [remaining, setRemaining] = useState(null);
+  const { isPro } = usePro();
+  const [showPro, setShowPro] = useState(false);
   const endRef = useRef(null);
 
   useEffect(() => {
@@ -46,6 +49,7 @@ export default function AdviceChat() {
       } catch { /* зочноор үргэлжилнэ */ }
       const r = await fetch(API, { method: "POST", headers, body: JSON.stringify({ messages: next }) });
       const data = await r.json().catch(() => ({}));
+      if (r.status === 429 && !isPro) { setShowPro(true); }
       if (!r.ok || !data.reply) throw new Error(data.error || "Хариу ирсэнгүй");
       setMessages((m) => [...m, { role: "assistant", content: data.reply }]);
       if (typeof data.remaining === "number") setRemaining(data.remaining);
@@ -124,8 +128,15 @@ export default function AdviceChat() {
       </div>
       <p className="border-t border-slate-100 dark:border-slate-800 px-4 py-2 text-[10px] text-slate-400">
         AI зөвлөгөө нь ерөнхий мэдээлэл — даацын бүтээц, цахилгаан зэрэг чухал шийдвэрийг мэргэжлийн инженерээр баталгаажуулна уу.
-        {remaining !== null && <span className="ml-2 font-mono">Өнөөдөр үлдсэн: {remaining} асуулт</span>}
+        {isPro
+          ? <span className="ml-2 font-mono text-orange-600">✦ PRO — хязгааргүй</span>
+          : remaining !== null && (
+            <span className="ml-2 font-mono">Өнөөдөр үлдсэн: {remaining} асуулт
+              {remaining <= 3 && <button onClick={() => setShowPro(true)} className="ml-2 font-bold text-orange-600 hover:underline">Pro болох →</button>}
+            </span>
+          )}
       </p>
+      {showPro && <ProUpgradeModal onClose={() => setShowPro(false)} reason="Өдрийн үнэгүй лимит дууслаа. Pro болвол хязгааргүй асуулт асуух боломжтой." />}
     </div>
   );
 }
