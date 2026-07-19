@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { auth } from "./firebase.js";
 import {
   onAuthStateChanged, signOut,
@@ -68,8 +69,17 @@ function AuthModal({ onClose }) {
 
   const input = "w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-2.5 text-sm text-slate-900 dark:text-white focus:border-orange-500 focus:outline-none";
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={onClose}>
+  /* Portal: header-ийн backdrop-blur дотор fixed эвдэрдэг тул body дээр рэндэрлэнэ */
+  useEffect(() => {
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = prev; };
+  }, []);
+  return createPortal(
+    <div
+      className="flex items-center justify-center bg-black/50 p-4"
+      style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, zIndex: 2147483647, overflowY: "auto" }}
+      onClick={onClose}>
       <div className="w-full max-w-sm rounded-3xl bg-white dark:bg-slate-900 p-6 shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <div className="mb-4 flex gap-1 rounded-xl bg-slate-100 dark:bg-slate-800 p-1">
           {[["login", "Нэвтрэх"], ["register", "Бүртгүүлэх"]].map(([m, l]) => (
@@ -100,7 +110,8 @@ function AuthModal({ onClose }) {
         </div>
         <p className="mt-4 text-center text-[10px] text-slate-400">Бүртгүүлснээр төслөө хадгалах, AI зөвлөхөөс илүү олон асуулт асуух боломжтой</p>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
