@@ -28,3 +28,8 @@ Editor directories and files
 functions/.env
 .firebase/
 dist/
+
+.env
+functions/.env
+.firebase/
+dist/
