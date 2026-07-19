@@ -1,7 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { initializeApp } from 'firebase/app';
-import { getAuth, signInAnonymously } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
+import BuildEstimator from './BuildEstimator.jsx';
+import QuickPlanner from './QuickPlanner.jsx';
+import EngineeringTools from './EngineeringTools.jsx';
+import AdviceChat from './AdviceChat.jsx';
+import { signInAnonymously } from 'firebase/auth';
+import { app, auth, db } from './firebase.js';
+import { AuthButton } from './AuthPanel.jsx';
 import { 
   Calculator, BrickWall, PaintBucket, Ruler, Info, 
   Menu, X, Grid, Cylinder, Box, Scroll, Coins, 
@@ -19,12 +23,8 @@ import {
   ThumbsUp, MessageCircle, HelpCircle
 } from 'lucide-react';
 
-// --- Firebase Stub (For Compilation) ---
-// eslint-disable-next-line no-undef
-const firebaseConfig = JSON.parse(__firebase_config);
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-getFirestore(app); // initialized for future use
+// Firebase init нь ./firebase.js модульд нэгдсэн (app, auth, db)
+void app; void db;
 
 // ==========================================
 // 1. DATA CONSTANTS & LOGIC
@@ -345,6 +345,8 @@ const Header = ({ cartCount, onNavigate, onOpenCart, darkMode, toggleDarkMode, u
                     <>
                         <button onClick={() => onNavigate('home')} className="text-sm font-bold text-slate-600 dark:text-slate-300 hover:text-orange-600 transition-colors">Нүүр</button>
                         <button onClick={() => onNavigate('builder')} className="text-sm font-bold text-slate-600 dark:text-slate-300 hover:text-orange-600 transition-colors">Төлөвлөгч</button>
+                        <button onClick={() => onNavigate('estimator')} className="text-sm font-bold text-orange-600 hover:text-orange-700 transition-colors">Тооцоолуур</button>
+                        <button onClick={() => onNavigate('tools')} className="text-sm font-bold text-slate-600 dark:text-slate-300 hover:text-orange-600 transition-colors">Инженер</button>
                         <button onClick={() => onNavigate('advice')} className="text-sm font-bold text-slate-600 dark:text-slate-300 hover:text-orange-600 transition-colors">Зөвлөгөө</button>
                         <button onClick={() => onNavigate('rfq')} className="text-sm font-bold text-slate-600 dark:text-slate-300 hover:text-orange-600 transition-colors">Үнийн санал</button>
                     </>
@@ -353,6 +355,7 @@ const Header = ({ cartCount, onNavigate, onOpenCart, darkMode, toggleDarkMode, u
                 )}
             </nav>
             <div className="flex items-center gap-3">
+                <AuthButton />
                 <button onClick={() => setUserRole(userRole === 'user' ? 'seller' : 'user')} className={`p-2.5 rounded-xl transition-colors flex items-center gap-2 text-xs font-bold ${userRole === 'seller' ? 'bg-orange-100 text-orange-700' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'}`}>
                     {userRole === 'user' ? <User size={16}/> : <Store size={16}/>}
                     <span className="hidden sm:inline">{userRole === 'user' ? 'Хэрэглэгч' : 'Борлуулагч'}</span>
@@ -372,7 +375,7 @@ const Header = ({ cartCount, onNavigate, onOpenCart, darkMode, toggleDarkMode, u
 const Footer = () => (
     <footer className="bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 py-12 mt-12 transition-colors duration-300">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center md:text-left">
-            <div className="flex flex-col md:flex-row justify-between items-center gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                 <div>
                     <h3 className="font-bold text-slate-900 dark:text-white text-lg flex items-center gap-2 justify-center md:justify-start">
                          <img 
@@ -388,9 +391,34 @@ const Footer = () => (
                     </h3>
                     <p className="text-slate-500 text-sm mt-2">Барилгын ухаалаг туслах.</p>
                 </div>
-                <div className="text-xs text-slate-400">
-                    &copy; 2026 Hutuch.com. All rights reserved.
+                <div>
+                    <h4 className="font-bold text-slate-900 dark:text-white text-sm mb-3">Холбоо барих</h4>
+                    <ul className="space-y-2 text-sm text-slate-500">
+                        <li className="flex items-center gap-2 justify-center md:justify-start">
+                            <span>📞</span>
+                            <a href="tel:99787222" className="hover:text-orange-600">9978-7222</a>
+                        </li>
+                        <li className="flex items-center gap-2 justify-center md:justify-start">
+                            <span>✉️</span>
+                            <a href="mailto:hutuchshop@gmail.com" className="hover:text-orange-600">hutuchshop@gmail.com</a>
+                        </li>
+                        <li className="flex items-center gap-2 justify-center md:justify-start">
+                            <span>📍</span>
+                            <span>Улаанбаатар, Монгол</span>
+                        </li>
+                    </ul>
                 </div>
+                <div>
+                    <h4 className="font-bold text-slate-900 dark:text-white text-sm mb-3">Манай платформууд</h4>
+                    <ul className="space-y-2 text-sm text-slate-500">
+                        <li><a href="https://hutuch.com" className="hover:text-orange-600">hutuch.com — Тооцоолуур</a></li>
+                        <li><a href="https://hutuch.shop" className="hover:text-orange-600">hutuch.shop — Дэлгүүр</a></li>
+                        <li><a href="https://hutuch.app" className="hover:text-orange-600">hutuch.app — Нийлүүлэлт</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div className="mt-8 pt-6 border-t border-slate-100 dark:border-slate-800 text-center text-xs text-slate-400">
+                &copy; 2026 Hutuch.com. Бүх эрх хуулиар хамгаалагдсан.
             </div>
         </div>
     </footer>
@@ -1716,7 +1744,8 @@ const HomeView = ({ onNavigate, onSelectCategory, onStartTemplate }) => (
 
 // --- MAIN APP ---
 export default function App() {
-    const [view, setView] = useState('home'); 
+    const [view, setView] = useState('home');
+    const [estimatorPreset, setEstimatorPreset] = useState(null); 
     const [selectedCat, setSelectedCat] = useState(null); 
     const [cart, setCart] = useState([]);
     const [isCartOpen, setIsCartOpen] = useState(false);
@@ -1735,7 +1764,7 @@ export default function App() {
             if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
                 // Handle custom token if needed
             } else {
-                await signInAnonymously(auth);
+                if (auth) await signInAnonymously(auth);
             }
         };
         initAuth();
@@ -1781,15 +1810,16 @@ export default function App() {
                         // USER VIEWS
                         <>
                             {view === 'home' && <HomeView onNavigate={handleNav} onSelectCategory={(id) => { setSelectedCat(id); setView('category'); }} onStartTemplate={handleStartTemplate} />}
-                            {view === 'builder' && <VisualBuilderView onBack={() => setView('home')} template={initialTemplate} />}
-                            {view === 'advice' && <AdviceForumView onBack={() => setView('home')} />}
+                            {view === 'builder' && <QuickPlanner onBack={() => setView('home')} template={initialTemplate} onAdvanced={(p) => { setEstimatorPreset(p); setView('estimator'); }} />}
+                            {view === 'advice' && <div><div className="pt-6"><AdviceChat /></div><AdviceForumView onBack={() => setView('home')} /></div>}
                             {view === 'rfq' && <RFQManager rfqs={rfqs} onBack={() => setView('home')} />}
                             {view === 'category' && <CategoryDetail categoryId={selectedCat} groupId={selectedCat} onBack={() => setView('home')} onAddToCart={handleAddToCart} allProducts={allProducts} />}
                             
                             {view === 'services' && <ServicesDashboard onNavigate={setView} />}
                             {view === 'china' && <ChinaImportScreen onBack={() => handleNav('services')} />}
                             {view === 'rental' && <RentalScreen onBack={() => handleNav('services')} />}
-                            {view === 'estimator' && <Estimator onBack={() => setView('home')} />}
+                            {view === 'estimator' && <BuildEstimator onBack={() => setView('home')} preset={estimatorPreset} />}
+                            {view === 'tools' && <EngineeringTools onBack={() => setView('home')} />}
                         </>
                     )}
                 </main>
