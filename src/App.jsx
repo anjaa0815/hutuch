@@ -1726,6 +1726,24 @@ const HomeView = ({ onNavigate, onSelectCategory, onStartTemplate }) => (
                     <MessageSquare size={120} />
                 </div>
             </div>
+
+            {/* Нийлүүлэгч, хамтрагч урих баннер */}
+            <a href="tel:99787222" className="block bg-gradient-to-r from-orange-600 to-amber-600 rounded-3xl p-6 text-white shadow-lg cursor-pointer hover:scale-[1.01] transition-transform relative overflow-hidden group mt-4">
+                <div className="relative z-10 flex justify-between items-center">
+                    <div>
+                        <h3 className="font-bold text-lg mb-1 flex items-center gap-2">🤝 Хамтран ажиллах уу?</h3>
+                        <p className="text-orange-100 text-xs max-w-md">Барилгын материалын нийлүүлэгч, хамтрагч байгууллага, хувь хүмүүсийг хайж байна. Танай бүтээгдэхүүнийг бэлэн худалдан авагчидтай холбоно. <span className="font-bold">Эхний 20 нийлүүлэгч 3 сар үнэгүй.</span></p>
+                        <div className="mt-2 flex items-center gap-4 text-sm font-bold">
+                            <span className="flex items-center gap-1">📞 9978-7222</span>
+                            <span className="flex items-center gap-1">✉️ hutuchshop@gmail.com</span>
+                        </div>
+                    </div>
+                    <div className="bg-white/10 p-3 rounded-full backdrop-blur-sm group-hover:bg-white/20 transition-colors shrink-0">
+                        <ArrowRight size={20} />
+                    </div>
+                </div>
+                <div className="absolute top-0 right-0 p-8 opacity-10 text-6xl">🏗</div>
+            </a>
         </div>
 
         <div className="px-2 mb-10">
