@@ -470,6 +470,123 @@ function Converter() {
   );
 }
 
+/* ============ 11. Заслын материалын тоо хэмжээ ============ */
+const FINISH_JOBS = [
+  { id: "tile_floor", name: "Шалны плита наах", icon: "🔲", surf: "floor" },
+  { id: "tile_wall", name: "Ханын плита наах", icon: "🧱", surf: "wall" },
+  { id: "laminate", name: "Ламинат / паркет тавих", icon: "🟫", surf: "floor" },
+  { id: "wallpaper", name: "Обой наах", icon: "🎞", surf: "wall" },
+  { id: "ceiling_tile", name: "Таазны хавтан наах", icon: "⬜", surf: "floor" },
+];
+function FinishQty() {
+  const [job, setJob] = useState("tile_floor");
+  const [rl, setRl] = useState(4);      // өрөөний урт
+  const [rw, setRw] = useState(3);      // өрөөний өргөн
+  const [rh, setRh] = useState(2.7);    // таазны өндөр
+  const [openings, setOpenings] = useState(3); // хаалга/цонхны талбай (м²) — хананд хасна
+  const [waste, setWaste] = useState(7);       // эсгэлт, гэмтлийн нөөц %
+  // Плита
+  const [tw, setTw] = useState(0.6);
+  const [th, setTh] = useState(0.6);
+  const [perBox, setPerBox] = useState(0);     // 0=ширхгээр, >0=хайрцагт хэдэн ш
+  // Ламинат/паркет
+  const [boxArea, setBoxArea] = useState(2.2); // 1 хайрцаг хэдэн м²
+  // Обой
+  const [rollW, setRollW] = useState(0.53);
+  const [rollL, setRollL] = useState(10);
+  const [rapport, setRapport] = useState(0);   // хээний давталт (см), 0=хээгүй
+
+  const j = FINISH_JOBS.find((x) => x.id === job);
+  const k = 1 + waste / 100;
+
+  const r = useMemo(() => {
+    const floorArea = rl * rw;
+    const wallArea = Math.max(0, 2 * (rl + rw) * rh - openings);
+    const area = j.surf === "floor" ? floorArea : wallArea;
+
+    if (job === "tile_floor" || job === "tile_wall" || job === "ceiling_tile") {
+      const one = tw * th;
+      const pcs = Math.ceil(area / one * k);
+      const boxes = perBox > 0 ? Math.ceil(pcs / perBox) : null;
+      return { area, lines: [
+        ["Гадаргуугийн талбай", `${fmt(area, 1)} м²`],
+        ["Нэг хавтангийн талбай", `${fmt(one, 3)} м²`],
+        ["Шаардлагатай хавтан", `${pcs} ш`, true],
+        ...(boxes ? [["Хайрцаг", `${boxes} хайрцаг`, true]] : []),
+        ["Плитаны цавуу (~4кг/м²)", `${fmt(area * 4 * 1.05, 0)} кг`],
+      ]};
+    }
+    if (job === "laminate") {
+      const boxes = Math.ceil(area * k / boxArea);
+      return { area, lines: [
+        ["Шалны талбай", `${fmt(area, 1)} м²`],
+        ["Нөөцтэй талбай", `${fmt(area * k, 1)} м² (+${waste}%)`],
+        ["Хайрцаг", `${boxes} хайрцаг`, true],
+        ["Дэвсгэр (подложка)", `${fmt(area * 1.05, 1)} м²`],
+      ]};
+    }
+    // wallpaper
+    const usableRoll = rapport > 0 ? Math.floor(rollL / (rh + rapport / 100)) : Math.floor(rollL / (rh + 0.05));
+    const stripsPerRoll = Math.max(1, usableRoll);
+    const perim = 2 * (rl + rw);
+    const totalStrips = Math.ceil(perim / rollW);
+    const rolls = Math.ceil(totalStrips / stripsPerRoll);
+    return { area: wallArea, lines: [
+      ["Ханын периметр", `${fmt(perim, 1)} м`],
+      ["Нэг рулонгоос гарах зурвас", `${stripsPerRoll} ш (${rh}м өндөрт)`],
+      ["Нийт зурвас", `${totalStrips} ш`],
+      ["Шаардлагатай рулон", `${rolls} рулон`, true],
+      ["Обойн цавуу (~250г/рулон)", `${fmt(rolls * 0.25, 1)} кг`],
+    ]};
+  }, [job, rl, rw, rh, openings, waste, tw, th, perBox, boxArea, rollW, rollL, rapport, k, j.surf]);
+
+  return (
+    <div>
+      <div className="mb-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
+        {FINISH_JOBS.map((x) => (
+          <button key={x.id} onClick={() => setJob(x.id)}
+            className={`rounded-xl border px-3 py-2 text-left text-sm font-medium transition ${job === x.id
+              ? "border-orange-500 bg-orange-50 dark:bg-orange-950/30 text-orange-700 dark:text-orange-400"
+              : "border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-orange-300"}`}>
+            <span className="mr-1">{x.icon}</span>{x.name}
+          </button>
+        ))}
+      </div>
+
+      <div className="mb-2 text-[11px] font-bold uppercase tracking-wide text-slate-500">Өрөөний хэмжээ</div>
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <Num label="Урт" unit="м" value={rl} onChange={setRl} step={0.1} />
+        <Num label="Өргөн" unit="м" value={rw} onChange={setRw} step={0.1} />
+        {j.surf === "wall" && <Num label="Таазны өндөр" unit="м" value={rh} onChange={setRh} step={0.1} />}
+        {j.surf === "wall" && <Num label="Хаалга+цонх" unit="м²" value={openings} onChange={setOpenings} step={0.5} />}
+        <Num label="Нөөц" unit="%" value={waste} onChange={setWaste} step={1} />
+      </div>
+
+      <div className="mt-3 mb-2 text-[11px] font-bold uppercase tracking-wide text-slate-500">Материалын хэмжээ</div>
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        {(job === "tile_floor" || job === "tile_wall" || job === "ceiling_tile") && (<>
+          <Num label="Хавтан өргөн" unit="м" value={tw} onChange={setTw} step={0.05} />
+          <Num label="Хавтан урт" unit="м" value={th} onChange={setTh} step={0.05} />
+          <Num label="Хайрцагт (0=ширхгээр)" unit="ш" value={perBox} onChange={setPerBox} step={1} />
+        </>)}
+        {job === "laminate" && (
+          <Num label="1 хайрцаг" unit="м²" value={boxArea} onChange={setBoxArea} step={0.1} />
+        )}
+        {job === "wallpaper" && (<>
+          <Num label="Рулон өргөн" unit="м" value={rollW} onChange={setRollW} step={0.01} />
+          <Num label="Рулон урт" unit="м" value={rollL} onChange={setRollL} step={0.5} />
+          <Num label="Хээний давталт" unit="см" value={rapport} onChange={setRapport} step={1} />
+        </>)}
+      </div>
+
+      <div className="mt-4 grid gap-2 sm:grid-cols-2">
+        {r.lines.map(([label, value, hi]) => <Res key={label} label={label} value={value} hi={hi} />)}
+      </div>
+      <Note>Нөөц %: энгийн зассан талбайд 7-10%, диагональ/хээтэй наалтад 10-15%. Плитаны хооронд 2-3мм зай авдаг тул үнэн хэрэгтээ арай бага орж болно. Обойн хээ том давталттай бол «хээний давталт»-аа оруулбал зурвас бүрд илүү гарц ордог тул рулон нэмэгдэнэ.</Note>
+    </div>
+  );
+}
+
 /* ============================================================ */
 const TOOLS = [
   { id: "heat", icon: "🌡", name: "Дулаан алдагдал", desc: "Зуухны хүч, жилийн халаалтын зардал", comp: HeatLoss, cat: "Халаалт" },
@@ -479,6 +596,7 @@ const TOOLS = [
   { id: "concrete", icon: "🏗", name: "Бетоны найрлага", desc: "Цемент, элс, хайрга, ус", comp: Concrete, cat: "Барилга" },
   { id: "rebar", icon: "🔩", name: "Арматурын жин", desc: "d²/162 — кг/м, нийт тонн", comp: Rebar, cat: "Барилга" },
   { id: "brick", icon: "🧱", name: "Тоосгон өрлөг", desc: "Тоосго, зуурмаг, цемент, элс", comp: Brick, cat: "Барилга" },
+  { id: "finishqty", icon: "🔲", name: "Плита, обой, ламинат", desc: "Өрөө + материалын хэмжээ → ширхэг, хайрцаг, рулон", comp: FinishQty, cat: "Засал" },
   { id: "plaster", icon: "🎨", name: "Шавардлага & будаг", desc: "Зуурмаг, цемент, будгийн литр", comp: PlasterPaint, cat: "Засал" },
   { id: "geom", icon: "📐", name: "Талбай & эзлэхүүн", desc: "11 хэлбэрийн м², м³ — траншей, багана, овоолго", comp: Geometry, cat: "Хэрэгсэл" },
   { id: "conv", icon: "🔄", name: "Нэгж хөрвүүлэгч", desc: "Урт, жин, даралт, чадал… 10 төрлийн нэгж", comp: Converter, cat: "Хэрэгсэл" },

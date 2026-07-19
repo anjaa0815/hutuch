@@ -1,5 +1,6 @@
 import { useState, useMemo, useRef, useEffect } from "react";
 import * as THREE from "three";
+import CloudProjects from "./ProjectStore.jsx";
 
 /* ============================================================
    ХӨТӨЧ — Барилгын Төсвийн Тооцоолуур v9 (hutuch.com)
@@ -1011,22 +1012,25 @@ export default function BuildEstimator({ onBack, preset }) {
     a.download = "hutuch-tusul.json";
     a.click();
   };
+  /* Төслийн өгөгдлийг тооцоолуурт буулгах — JSON импорт болон cloud нээлт хоёул үүнийг хэрэглэнэ */
+  const applyProject = (d) => {
+    if (d.rooms) setRooms(d.rooms.map(migrateOpenings));
+    if (d.settings) setSettings((s) => ({ ...s, ...d.settings }));
+    if (d.selections) setSelections((s) => ({ ...s, ...d.selections }));
+    if (d.norms) setNorms((n) => ({ ...n, ...d.norms }));
+    if (d.prices) setPrices((p) => ({ ...p, ...d.prices }));
+    if (d.laborNorms) setLaborNorms((l) => ({ ...l, ...d.laborNorms }));
+    if (d.mep) setMep((m) => ({ ...m, ...d.mep }));
+    if (d.quote) setQuote((q) => ({ ...q, ...d.quote }));
+  };
+  const projectData = () => ({ rooms, settings, selections, norms, prices, laborNorms, mep, quote });
   const importJSON = (e) => {
     const f = e.target.files?.[0];
     if (!f) return;
     const rd = new FileReader();
     rd.onload = () => {
-      try {
-        const d = JSON.parse(rd.result);
-        if (d.rooms) setRooms(d.rooms.map(migrateOpenings));
-        if (d.settings) setSettings((s) => ({ ...s, ...d.settings }));
-        if (d.selections) setSelections((s) => ({ ...s, ...d.selections }));
-        if (d.norms) setNorms((n) => ({ ...n, ...d.norms }));
-        if (d.prices) setPrices((p) => ({ ...p, ...d.prices }));
-        if (d.laborNorms) setLaborNorms((l) => ({ ...l, ...d.laborNorms }));
-        if (d.mep) setMep((m) => ({ ...m, ...d.mep }));
-        if (d.quote) setQuote((q) => ({ ...q, ...d.quote }));
-      } catch { alert("JSON файл уншигдсангүй"); }
+      try { applyProject(JSON.parse(rd.result)); }
+      catch { alert("JSON файл уншигдсангүй"); }
     };
     rd.readAsText(f);
     e.target.value = "";
@@ -1198,7 +1202,8 @@ export default function BuildEstimator({ onBack, preset }) {
               <h2 className="text-sm font-bold uppercase tracking-wide text-stone-600">Төсвийн дэлгэрэнгүй</h2>
               <div className="flex gap-2">
                 <button onClick={exportCSV} className="rounded-lg bg-green-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-green-800">⬇ CSV татах</button>
-                <button onClick={exportJSON} className="rounded-lg bg-stone-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-stone-800">💾 Төсөл хадгалах</button>
+                <CloudProjects getData={projectData} onLoad={applyProject} />
+                <button onClick={exportJSON} className="rounded-lg bg-stone-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-stone-800">💾 JSON татах</button>
                 <button onClick={() => fileRef.current?.click()} className="rounded-lg border border-stone-300 bg-white px-3 py-1.5 text-sm font-medium hover:bg-stone-50">📂 Төсөл нээх</button>
                 <input ref={fileRef} type="file" accept=".json" className="hidden" onChange={importJSON} />
               </div>
