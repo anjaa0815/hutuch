@@ -24,3 +24,7 @@ Editor directories and files
 *.njsproj
 *.sln
 *.sw?
+.env
+functions/.env
+.firebase/
+dist/
