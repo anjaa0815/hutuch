@@ -19,7 +19,7 @@ export const PRO_PRICE = "30,000₮";
 export const PRO_PRICE_YEAR = "300,000₮";
 export const BANK_INFO = {
   bank: "Хаан банк",
-  account: "5086038109",       // ← өөрийн дансаа бичнэ
+  account: "5xxx xxx xxx",       // ← өөрийн дансаа бичнэ
   name: "Ариунжаргал",           // ← дансны нэр
 };
 

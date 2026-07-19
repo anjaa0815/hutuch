@@ -1,6 +1,7 @@
 import { useState, useMemo, useRef, useEffect } from "react";
 import * as THREE from "three";
 import CloudProjects from "./ProjectStore.jsx";
+import { ExplainButton } from "./BudgetExplain.jsx";
 
 /* ============================================================
    ХӨТӨЧ — Барилгын Төсвийн Тооцоолуур v9 (hutuch.com)
@@ -1235,7 +1236,7 @@ export default function BuildEstimator({ onBack, preset }) {
                       ...lines.filter((l) => l.group === g).map((l) => (
                         <tr key={l.key} className="border-b border-stone-100">
                           <td className="px-3 py-2 font-mono text-stone-400">{lines.indexOf(l) + 1}</td>
-                          <td className="px-3 py-2">{l.name}</td>
+                          <td className="px-3 py-2">{l.name}<ExplainButton line={l} context={`${settings.floors} давхар, ${fmt(geo.floorArea,0)}м²`} /></td>
                           <td className="px-3 py-2 text-right font-mono">{fmt(l.qty, 2)} {l.unit}</td>
                           <td className="px-3 py-2 text-right font-mono">{fmtT(l.price)}</td>
                           <td className="px-3 py-2 text-right font-mono">{fmtT(l.total)}</td>

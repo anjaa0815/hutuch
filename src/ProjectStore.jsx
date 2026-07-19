@@ -2,9 +2,10 @@ import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { auth, db } from "./firebase.js";
 import { onAuthStateChanged } from "firebase/auth";
+import { usePro, ProUpgradeModal } from "./ProMembership.jsx";
 import {
   collection, doc, setDoc, getDocs, deleteDoc,
-  serverTimestamp, query, orderBy,
+  serverTimestamp,
 } from "firebase/firestore";
 
 /* ============================================================
@@ -31,6 +32,8 @@ export default function CloudProjects({ getData, onLoad }) {
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState(null);
+  const { isPro } = usePro();
+  const [showPro, setShowPro] = useState(false);
 
   useEffect(() => {
     if (!auth) return;
@@ -43,8 +46,10 @@ export default function CloudProjects({ getData, onLoad }) {
     if (!user || !db) return;
     setBusy(true);
     try {
-      const snap = await getDocs(query(colRef(), orderBy("updatedAt", "desc")));
-      setItems(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+      const snap = await getDocs(colRef());
+      const list = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      list.sort((a, b) => (b.updatedAt?.seconds || 0) - (a.updatedAt?.seconds || 0));
+      setItems(list);
     } catch (e) {
       console.error(e);
       setMsg({ t: "err", x: "Уншиж чадсангүй — Firestore үүсгэгдсэн, дүрэм deploy хийгдсэн эсэхийг шалгана уу." });
@@ -113,6 +118,16 @@ export default function CloudProjects({ getData, onLoad }) {
               <p className="rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-800">
                 Төслөө cloud-д хадгалахын тулд эхлээд <b>Нэвтэрч</b> орно уу (баруун дээд булангийн товч).
               </p>
+            ) : !isPro ? (
+              <div className="text-center">
+                <div className="mb-3 text-4xl">☁️✨</div>
+                <p className="mb-1 text-sm font-bold text-stone-800">Cloud төсөл хадгалах нь Pro боломж</p>
+                <p className="mb-4 text-xs text-stone-500">Төслөө үүлэнд хадгалаад өөр төхөөрөмжөөс нээх, лого-той PDF маягт татахын тулд Pro болоорой.</p>
+                <button onClick={() => { setOpen(false); setShowPro(true); }}
+                  className="rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 px-5 py-2.5 text-sm font-bold text-white shadow hover:opacity-90">
+                  Pro болох →
+                </button>
+              </div>
             ) : (
               <>
                 {/* Одоогийн төслийг хадгалах */}
@@ -159,6 +174,7 @@ export default function CloudProjects({ getData, onLoad }) {
         </div>,
         document.body
       )}
+      {showPro && <ProUpgradeModal onClose={() => setShowPro(false)} reason="Cloud төсөл хадгалах, лого-той PDF татах нь Pro гишүүдэд нээлттэй." />}
     </>
   );
 }
