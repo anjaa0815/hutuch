@@ -1026,11 +1026,7 @@ function RoomCard({ room, index, selected, onSelect, onChange, onDelete }) {
               </div>
             ))}
           </div>
-          <p className="mt-1 text-[10px] text-stone-400">
-            {drawMode
-              ? "✏️ ЗУРАХ ГОРИМ: товшиж хананы булан тавина · дараагийн товшилт хана татна · эхний улбар шар цэг рүү товшиж битүүлбэл өрөө үүснэ · давхар товшиж цуцлана"
-              : "Зураг дээр: цэг чирж зөөх · ирмэгийн ⬜ чирч цэг нэмэх · цэгийг давхар товшиж устгах"}
-          </p>
+          <p className="mt-1 text-[10px] text-stone-400">Зураг дээр: цэг чирж зөөх · ирмэгийн ⬜ чирч цэг нэмэх · цэгийг давхар товшиж устгах</p>
         </div>
       )}
       <div>
@@ -1322,10 +1318,17 @@ export default function BuildEstimator({ onBack, preset }) {
                 </div>
                 {view === "2d" && <span className="rounded-md bg-stone-200 px-2 py-1 font-mono text-[11px] text-stone-600">1 нүд = 1м · чирнэ · ⌒ хаалга, ☰ цонх авто байрлана</span>}
               </div>
-              {rooms.length === 0 ? (
-                <div className="rounded-xl border border-dashed border-stone-300 bg-white p-10 text-center text-stone-400">Өрөө нэмээд планаа эхлүүлнэ үү</div>
-              ) : view === "2d" ? (
-                <PlanCanvas rooms={rooms} setRooms={setRooms} selected={selected} setSelected={setSelected} drawMode={drawMode} setDrawMode={setDrawMode} furniture={furniture} setFurniture={setFurniture} />
+              {view === "2d" ? (
+                <>
+                  <PlanCanvas rooms={rooms} setRooms={setRooms} selected={selected} setSelected={setSelected} drawMode={drawMode} setDrawMode={setDrawMode} furniture={furniture} setFurniture={setFurniture} />
+                  {drawMode && (
+                    <p className="mt-2 rounded-lg bg-stone-800 px-3 py-2 text-[11px] leading-snug text-white">
+                      ✏️ <b>ЗУРАХ ГОРИМ</b> — товшиж хананы булан тавина · дараагийн товшилт хана татна · эхний улбар шар цэг рүү товшиж битүүлбэл өрөө үүснэ · давхар товшиж цуцлана
+                    </p>
+                  )}
+                </>
+              ) : rooms.length === 0 ? (
+                <div className="rounded-xl border border-dashed border-stone-300 bg-white p-10 text-center text-stone-400">3D харахын тулд эхлээд өрөө зурна уу</div>
               ) : (
                 <ThreeView rooms={rooms} settings={settings} geo={geo} selections={selections} />
               )}
