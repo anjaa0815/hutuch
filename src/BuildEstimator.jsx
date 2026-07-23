@@ -478,10 +478,13 @@ function MaterialSelector({ selections, setSelections, lines }) {
 }
 
 /* ---------- 2D SVG план ---------- */
-function PlanCanvas({ rooms, setRooms, selected, setSelected }) {
+function PlanCanvas({ rooms, setRooms, selected, setSelected, drawMode, setDrawMode }) {
   const SCALE = 42, PAD = 1.5;
   const svgRef = useRef(null);
   const dragRef = useRef(null);
+  /* Хана зурах горим: татаж буй цэгүүд */
+  const [wallPts, setWallPts] = useState([]);      // одоог хүртэл тавьсан булангууд
+  const [ghost, setGhost] = useState(null);        // хулганы дараах цэг
 
   const allPts = rooms.flatMap((r) => r.points);
   const minX = Math.min(0, ...allPts.map((p) => p.x)), maxX = Math.max(10, ...allPts.map((p) => p.x));
@@ -520,7 +523,56 @@ function PlanCanvas({ rooms, setRooms, selected, setSelected }) {
     setSelected(room.id);
     dragRef.current = { mode: "opening", id: room.id, oid: opening.id };
   };
+  /* --- Хана зурах горимын логик --- */
+  const SNAP_DIST = 0.35; // м — ойрын цэгт наалдах зай
+  const snapToExisting = (m) => {
+    let best = null;
+    // Одоо зурж буй ханын цэгүүд + бүх өрөөний булангууд руу наалдана
+    const cands = [...wallPts, ...rooms.flatMap((r) => r.points)];
+    cands.forEach((p) => {
+      const dist = Math.hypot(m.x - p.x, m.y - p.y);
+      if (dist < SNAP_DIST && (!best || dist < best.dist)) best = { p, dist };
+    });
+    if (best) return { x: best.p.x, y: best.p.y, snapped: true };
+    return { x: snap(m.x), y: snap(m.y), snapped: false };
+  };
+  const orthoLock = (from, to) => {
+    // Shift-гүй ч гэсэн 0/90° ойролцоо бол тэгшилнэ
+    const dx = Math.abs(to.x - from.x), dy = Math.abs(to.y - from.y);
+    if (dx > dy && dy < 0.3) return { x: to.x, y: from.y };
+    if (dy > dx && dx < 0.3) return { x: from.x, y: to.y };
+    return to;
+  };
+  const wallClick = (e) => {
+    if (!drawMode) return;
+    e.preventDefault(); e.stopPropagation();
+    const raw = toM(e);
+    let pt = snapToExisting(raw);
+    if (wallPts.length > 0) pt = { ...pt, ...orthoLock(wallPts[wallPts.length - 1], pt) };
+    // Эхний цэг дээр буцаж ирвэл битүүлж, өрөө үүсгэнэ
+    if (wallPts.length >= 3) {
+      const first = wallPts[0];
+      if (Math.hypot(pt.x - first.x, pt.y - first.y) < SNAP_DIST) {
+        const id = "r" + Date.now();
+        setRooms((rs) => [...rs, { id, name: `Өрөө ${rs.length + 1}`, points: wallPts.map((p) => ({ x: p.x, y: p.y })), openings: [] }]);
+        setSelected(id);
+        setWallPts([]); setGhost(null);
+        return;
+      }
+    }
+    setWallPts((w) => [...w, { x: pt.x, y: pt.y }]);
+  };
+  const wallMove = (e) => {
+    if (!drawMode || wallPts.length === 0) { if (ghost) setGhost(null); return; }
+    const raw = toM(e);
+    let pt = snapToExisting(raw);
+    pt = { ...pt, ...orthoLock(wallPts[wallPts.length - 1], pt) };
+    setGhost(pt);
+  };
+  const cancelWall = () => { setWallPts([]); setGhost(null); };
+
   const onMove = (e) => {
+    if (drawMode) { wallMove(e); return; }
     const d = dragRef.current;
     if (!d) return;
     const m = toM(e);
@@ -570,8 +622,11 @@ function PlanCanvas({ rooms, setRooms, selected, setSelected }) {
 
   return (
     <div className="overflow-auto rounded-xl border border-stone-300 bg-stone-50 shadow-inner">
-      <svg ref={svgRef} viewBox={`0 0 ${vw} ${vh}`} className="min-w-[520px] touch-none select-none"
-        onPointerMove={onMove} onPointerUp={onUp} onPointerLeave={onUp}>
+      <svg ref={svgRef} viewBox={`0 0 ${vw} ${vh}`}
+        className={`min-w-[520px] touch-none select-none ${drawMode ? "cursor-crosshair" : ""}`}
+        onPointerMove={onMove} onPointerUp={onUp} onPointerLeave={onUp}
+        onClick={wallClick}
+        onDoubleClick={() => drawMode && cancelWall()}>
         {gridLines}
         {rooms.map((r, i) => {
           const sel = selected === r.id;
@@ -688,6 +743,44 @@ function PlanCanvas({ rooms, setRooms, selected, setSelected }) {
           <text x={X(rMaxX) + 36} y={(Y(rMinY) + Y(rMaxY)) / 2} stroke="none"
             transform={`rotate(90 ${X(rMaxX) + 36} ${(Y(rMinY) + Y(rMaxY)) / 2})`} textAnchor="middle">{fmt(rMaxY - rMinY)}м</text>
         </g>
+
+        {/* --- Хана зурах горим: татаж буй хана --- */}
+        {drawMode && wallPts.length > 0 && (() => {
+          const pts = ghost ? [...wallPts, ghost] : wallPts;
+          const WALL_PX = 7; // ханын зузаан (харагдац)
+          const segs = [];
+          for (let i = 0; i < pts.length - 1; i++) {
+            const a = pts[i], b = pts[i + 1];
+            const len = Math.hypot(b.x - a.x, b.y - a.y);
+            const mx = (X(a.x) + X(b.x)) / 2, my = (Y(a.y) + Y(b.y)) / 2;
+            let deg = Math.atan2(b.y - a.y, b.x - a.x) * 180 / Math.PI;
+            if (deg > 90 || deg <= -90) deg += 180;
+            const isGhost = ghost && i === pts.length - 2;
+            segs.push(
+              <g key={"ws" + i}>
+                <line x1={X(a.x)} y1={Y(a.y)} x2={X(b.x)} y2={Y(b.y)}
+                  stroke={isGhost ? "#fb923c" : "#44403c"} strokeWidth={WALL_PX}
+                  strokeLinecap="square" strokeDasharray={isGhost ? "6 4" : undefined} opacity={isGhost ? 0.7 : 1} />
+                {len > 0.4 && (
+                  <text x={mx} y={my - 8} textAnchor="middle" transform={`rotate(${deg} ${mx} ${my - 8})`}
+                    className="fill-stone-700 font-mono" fontSize="11" fontWeight="700">{fmt(len)}м</text>
+                )}
+              </g>
+            );
+          }
+          return (
+            <g>
+              {segs}
+              {pts.map((p, i) => (
+                <circle key={"wp" + i} cx={X(p.x)} cy={Y(p.y)} r={4.5}
+                  fill={i === 0 ? "#ea580c" : "#fff"} stroke="#44403c" strokeWidth={1.5} />
+              ))}
+              {wallPts.length >= 3 && (
+                <circle cx={X(wallPts[0].x)} cy={Y(wallPts[0].y)} r={9} fill="none" stroke="#ea580c" strokeWidth={2} strokeDasharray="3 3" />
+              )}
+            </g>
+          );
+        })()}
       </svg>
     </div>
   );
@@ -892,7 +985,11 @@ function RoomCard({ room, index, selected, onSelect, onChange, onDelete }) {
               </div>
             ))}
           </div>
-          <p className="mt-1 text-[10px] text-stone-400">Зураг дээр: цэг чирж зөөх · ирмэгийн ⬜ чирч цэг нэмэх · цэгийг давхар товшиж устгах</p>
+          <p className="mt-1 text-[10px] text-stone-400">
+            {drawMode
+              ? "✏️ ЗУРАХ ГОРИМ: товшиж хананы булан тавина · дараагийн товшилт хана татна · эхний улбар шар цэг рүү товшиж битүүлбэл өрөө үүснэ · давхар товшиж цуцлана"
+              : "Зураг дээр: цэг чирж зөөх · ирмэгийн ⬜ чирч цэг нэмэх · цэгийг давхар товшиж устгах"}
+          </p>
         </div>
       )}
       <div>
@@ -939,6 +1036,7 @@ function RoomCard({ room, index, selected, onSelect, onChange, onDelete }) {
 /* ============================================================ */
 export default function BuildEstimator({ onBack, preset }) {
   const [tab, setTab] = useState("plan");
+  const [drawMode, setDrawMode] = useState(false);
   const [view, setView] = useState("2d");
   const [rooms, setRooms] = useState(preset?.rooms || DEFAULT_ROOMS);
   const [settings, setSettings] = useState(preset?.settings ? { ...DEFAULT_SETTINGS, ...preset.settings } : DEFAULT_SETTINGS);
@@ -1104,6 +1202,12 @@ export default function BuildEstimator({ onBack, preset }) {
               <div className="flex items-center justify-between gap-2">
                 <h2 className="text-sm font-bold uppercase tracking-wide text-stone-600">Өрөөний жагсаалт</h2>
                 <div className="flex gap-1">
+                  <button onClick={() => setDrawMode((v) => !v)}
+                    className={`rounded-lg px-2.5 py-1.5 text-sm font-medium transition ${drawMode
+                      ? "bg-stone-800 text-white"
+                      : "border border-stone-400 text-stone-700 hover:bg-stone-100"}`}>
+                    ✏️ Хана зурах
+                  </button>
                   <TemplateGallery onApply={(d) => { applyProject(d); setSelected(null); }} />
                   <button onClick={addRect} className="rounded-lg bg-orange-600 px-2.5 py-1.5 text-sm font-medium text-white hover:bg-orange-700">+ Тэгш өнцөгт</button>
                   <button onClick={addL} className="rounded-lg border border-orange-600 px-2.5 py-1.5 text-sm font-medium text-orange-700 hover:bg-orange-50">+ L-хэлбэр</button>
@@ -1142,7 +1246,7 @@ export default function BuildEstimator({ onBack, preset }) {
               {rooms.length === 0 ? (
                 <div className="rounded-xl border border-dashed border-stone-300 bg-white p-10 text-center text-stone-400">Өрөө нэмээд планаа эхлүүлнэ үү</div>
               ) : view === "2d" ? (
-                <PlanCanvas rooms={rooms} setRooms={setRooms} selected={selected} setSelected={setSelected} />
+                <PlanCanvas rooms={rooms} setRooms={setRooms} selected={selected} setSelected={setSelected} drawMode={drawMode} setDrawMode={setDrawMode} />
               ) : (
                 <ThreeView rooms={rooms} settings={settings} geo={geo} selections={selections} />
               )}
