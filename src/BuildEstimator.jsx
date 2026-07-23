@@ -488,8 +488,9 @@ function PlanCanvas({ rooms, setRooms, selected, setSelected, drawMode, setDrawM
   const [ghost, setGhost] = useState(null);        // хулганы дараах цэг
 
   const allPts = rooms.flatMap((r) => r.points);
-  const minX = Math.min(0, ...allPts.map((p) => p.x)), maxX = Math.max(10, ...allPts.map((p) => p.x));
-  const minY = Math.min(0, ...allPts.map((p) => p.y)), maxY = Math.max(8, ...allPts.map((p) => p.y));
+  const xs = allPts.map((p) => p.x), ys = allPts.map((p) => p.y);
+  const minX = Math.min(0, ...xs), maxX = Math.max(12, ...xs);
+  const minY = Math.min(0, ...ys), maxY = Math.max(9, ...ys);
   const vw = (maxX - minX + PAD * 2) * SCALE, vh = (maxY - minY + PAD * 2) * SCALE;
   const ox = (-minX + PAD) * SCALE, oy = (-minY + PAD) * SCALE;
   const X = (x) => ox + x * SCALE, Y = (y) => oy + y * SCALE;
@@ -630,8 +631,9 @@ function PlanCanvas({ rooms, setRooms, selected, setSelected, drawMode, setDrawM
   for (let i = Math.floor(minY - PAD); i <= Math.ceil(maxY + PAD); i++)
     gridLines.push(<line key={"h" + i} x1={0} y1={Y(i)} x2={vw} y2={Y(i)} stroke="#d6d3d1" strokeWidth={i === 0 ? 1.2 : 0.5} />);
 
-  const rMinX = Math.min(...allPts.map((p) => p.x)), rMaxX = Math.max(...allPts.map((p) => p.x));
-  const rMinY = Math.min(...allPts.map((p) => p.y)), rMaxY = Math.max(...allPts.map((p) => p.y));
+  const hasRooms = allPts.length > 0;
+  const rMinX = hasRooms ? Math.min(...xs) : 0, rMaxX = hasRooms ? Math.max(...xs) : 0;
+  const rMinY = hasRooms ? Math.min(...ys) : 0, rMaxY = hasRooms ? Math.max(...ys) : 0;
 
   return (
     <div className="overflow-auto rounded-xl border border-stone-300 bg-stone-50 shadow-inner">
@@ -745,7 +747,7 @@ function PlanCanvas({ rooms, setRooms, selected, setSelected, drawMode, setDrawM
             </g>
           );
         })}
-        <g stroke="#ea580c" strokeWidth={1} fill="#ea580c" fontFamily="monospace" fontSize={12}>
+        {hasRooms && <g stroke="#ea580c" strokeWidth={1} fill="#ea580c" fontFamily="monospace" fontSize={12}>
           <line x1={X(rMinX)} y1={Y(rMaxY) + 22} x2={X(rMaxX)} y2={Y(rMaxY) + 22} />
           <line x1={X(rMinX)} y1={Y(rMaxY) + 14} x2={X(rMinX)} y2={Y(rMaxY) + 30} strokeWidth={0.8} />
           <line x1={X(rMaxX)} y1={Y(rMaxY) + 14} x2={X(rMaxX)} y2={Y(rMaxY) + 30} strokeWidth={0.8} />
@@ -755,7 +757,25 @@ function PlanCanvas({ rooms, setRooms, selected, setSelected, drawMode, setDrawM
           <line x1={X(rMaxX) + 14} y1={Y(rMaxY)} x2={X(rMaxX) + 30} y2={Y(rMaxY)} strokeWidth={0.8} />
           <text x={X(rMaxX) + 36} y={(Y(rMinY) + Y(rMaxY)) / 2} stroke="none"
             transform={`rotate(90 ${X(rMaxX) + 36} ${(Y(rMinY) + Y(rMaxY)) / 2})`} textAnchor="middle">{fmt(rMaxY - rMinY)}м</text>
-        </g>
+        </g>}
+
+        {/* --- Хоосон канвасын заавар --- */}
+        {!hasRooms && wallPts.length === 0 && (
+          <g style={{ pointerEvents: "none" }}>
+            <text x={vw / 2} y={vh / 2 - 30} textAnchor="middle" className="fill-stone-400" fontSize="20" fontWeight="700">
+              Хоосон зургийн хуудас
+            </text>
+            <text x={vw / 2} y={vh / 2 + 2} textAnchor="middle" className="fill-stone-400" fontSize="14">
+              {drawMode ? "Товшиж хананы булангуудаа тавиад эхний цэг рүүгээ буцаж битүүлнэ" : "«✏️ Хана зурах» товчийг дарж эхлээрэй"}
+            </text>
+            <text x={vw / 2} y={vh / 2 + 26} textAnchor="middle" className="fill-stone-400" fontSize="13">
+              эсвэл «🏠 Бэлэн загвар»-аас сонгоно уу
+            </text>
+            <text x={vw / 2} y={vh / 2 + 58} textAnchor="middle" className="fill-stone-300" fontSize="11">
+              1 нүд = 1 метр
+            </text>
+          </g>
+        )}
 
         {/* --- Байрлуулсан тавилга --- */}
         {(furniture || []).map((f) => (
@@ -1057,7 +1077,7 @@ function RoomCard({ room, index, selected, onSelect, onChange, onDelete }) {
 /* ============================================================ */
 export default function BuildEstimator({ onBack, preset }) {
   const [tab, setTab] = useState("plan");
-  const [drawMode, setDrawMode] = useState(false);
+  const [drawMode, setDrawMode] = useState(!preset?.rooms);
   const [furniture, setFurniture] = useState([]);
   const [furnCat, setFurnCat] = useState("Унтлага");
   const addFurniture = (def) => {
@@ -1065,7 +1085,7 @@ export default function BuildEstimator({ onBack, preset }) {
     setFurniture((fs) => [...fs, { id: "f" + Date.now(), type: def.id, x: c.x, y: c.y, rot: 0, w: def.w, d: def.d }]);
   };
   const [view, setView] = useState("2d");
-  const [rooms, setRooms] = useState(preset?.rooms || DEFAULT_ROOMS);
+  const [rooms, setRooms] = useState(preset?.rooms || []);
   const [settings, setSettings] = useState(preset?.settings ? { ...DEFAULT_SETTINGS, ...preset.settings } : DEFAULT_SETTINGS);
   const [selections, setSelections] = useState(preset?.selections ? { ...DEFAULT_SELECTIONS, ...preset.selections } : DEFAULT_SELECTIONS);
   const [norms, setNorms] = useState(DEFAULT_NORMS);
