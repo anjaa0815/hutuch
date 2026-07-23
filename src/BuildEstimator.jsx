@@ -2,6 +2,7 @@ import { useState, useMemo, useRef, useEffect } from "react";
 import * as THREE from "three";
 import CloudProjects from "./ProjectStore.jsx";
 import { ExplainButton } from "./BudgetExplain.jsx";
+import TemplateGallery from "./HouseTemplates.jsx";
 
 /* ============================================================
    ХӨТӨЧ — Барилгын Төсвийн Тооцоолуур v9 (hutuch.com)
@@ -1103,6 +1104,7 @@ export default function BuildEstimator({ onBack, preset }) {
               <div className="flex items-center justify-between gap-2">
                 <h2 className="text-sm font-bold uppercase tracking-wide text-stone-600">Өрөөний жагсаалт</h2>
                 <div className="flex gap-1">
+                  <TemplateGallery onApply={(d) => { applyProject(d); setSelected(null); }} />
                   <button onClick={addRect} className="rounded-lg bg-orange-600 px-2.5 py-1.5 text-sm font-medium text-white hover:bg-orange-700">+ Тэгш өнцөгт</button>
                   <button onClick={addL} className="rounded-lg border border-orange-600 px-2.5 py-1.5 text-sm font-medium text-orange-700 hover:bg-orange-50">+ L-хэлбэр</button>
                 </div>
