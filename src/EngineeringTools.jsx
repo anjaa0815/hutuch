@@ -587,6 +587,83 @@ function FinishQty() {
   );
 }
 
+/* ============ 12. Доум (бөмбөгөр) сууц ============ */
+function DomeHouse() {
+  const [d, setD] = useState(6);
+  const [h, setH] = useState(4);
+  const [waste, setWaste] = useState(10);
+  // Үнэ (өөрчилж болно)
+  const [pCover, setPCover] = useState(180000);   // бүрхүүл ₮/м² (сэндвич панель/PVC)
+  const [pFloor, setPFloor] = useState(120000);   // шал, тавцан ₮/м²
+  const [pFound, setPFound] = useState(150000);   // суурийн цагираг ₮/м
+  // Дулаан
+  const [uCover, setUCover] = useState(0.35);
+  const [tOut, setTOut] = useState(-39);
+
+  const r = useMemo(() => {
+    const a = d / 2;
+    if (h <= 0 || a <= 0) return null;
+    const R = (a * a + h * h) / (2 * h);
+    const sDome = 2 * Math.PI * R * h;
+    const sFloor = Math.PI * a * a;
+    const vol = (Math.PI * h * h / 3) * (3 * R - h);
+    const ring = Math.PI * d;
+    const k = 1 + waste / 100;
+    const coverArea = sDome * k;
+    const costCover = coverArea * pCover;
+    const costFloor = sFloor * pFloor;
+    const costFound = ring * pFound;
+    const total = costCover + costFloor + costFound;
+    // Дулаан алдагдал
+    const dT = 20 - tOut;
+    const Q = (sDome * uCover + sFloor * 0.4 * 0.5) * dT + 0.34 * 0.5 * vol * dT;
+    return { R, sDome, sFloor, vol, ring, coverArea, costCover, costFloor, costFound, total, Q, boiler: Q * 1.2 / 1000 };
+  }, [d, h, waste, pCover, pFloor, pFound, uCover, tOut]);
+
+  return (
+    <div>
+      <div className="mb-2 text-[11px] font-bold uppercase tracking-wide text-slate-500">Хэмжээ</div>
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <Num label="Диаметр" unit="м" value={d} onChange={setD} step={0.5} />
+        <Num label="Өндөр" unit="м" value={h} onChange={setH} step={0.5} />
+        <Num label="Эсгэлтийн нөөц" unit="%" value={waste} onChange={setWaste} />
+        <Num label="Гадна загварын темп." unit="°C" value={tOut} onChange={setTOut} />
+      </div>
+      <div className="mt-3 mb-2 text-[11px] font-bold uppercase tracking-wide text-slate-500">Нэгж үнэ (өөрийн үнээр солино)</div>
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <Num label="Бүрхүүл" unit="₮/м²" value={pCover} onChange={setPCover} step={10000} />
+        <Num label="Шал, тавцан" unit="₮/м²" value={pFloor} onChange={setPFloor} step={10000} />
+        <Num label="Суурийн цагираг" unit="₮/м" value={pFound} onChange={setPFound} step={10000} />
+        <Num label="Бүрхүүлийн U утга" unit="Вт/м²К" value={uCover} onChange={setUCover} step={0.05} />
+      </div>
+      {r && (
+        <>
+          <div className="mt-4 grid gap-2 sm:grid-cols-2">
+            <Res label="Шалны талбай" value={`${fmt(r.sFloor, 1)} м²`} />
+            <Res label="Бүрхүүлийн (гадаргуу) талбай" value={`${fmt(r.sDome, 1)} м²`} hi />
+            <Res label="Эзлэхүүн" value={`${fmt(r.vol, 1)} м³`} />
+            <Res label="Суурийн цагирагийн урт" value={`${fmt(r.ring, 1)} м`} />
+            <Res label={`Бүрхүүл материал (+${waste}%)`} value={`${fmt(r.coverArea, 1)} м²`} />
+            <Res label="Бөмбөрцгийн радиус R" value={`${fmt(r.R, 2)} м`} />
+          </div>
+          <div className="mt-3 mb-2 text-[11px] font-bold uppercase tracking-wide text-slate-500">Урьдчилсан өртөг</div>
+          <div className="grid gap-2 sm:grid-cols-2">
+            <Res label="Бүрхүүл" value={`${fmt(r.costCover / 1e6, 1)} сая ₮`} />
+            <Res label="Шал, тавцан" value={`${fmt(r.costFloor / 1e6, 1)} сая ₮`} />
+            <Res label="Суурийн цагираг" value={`${fmt(r.costFound / 1e6, 1)} сая ₮`} />
+            <Res label="НИЙТ (ойролцоо)" value={`${fmt(r.total / 1e6, 1)} сая ₮`} hi />
+          </div>
+          <div className="mt-3 grid gap-2 sm:grid-cols-2">
+            <Res label={`Дулаан алдагдал (ΔT=${20 - tOut}°C)`} value={`${fmt(r.Q / 1000, 1)} кВт`} />
+            <Res label="Зуухны хүчин чадал (+20%)" value={`${fmt(r.boiler, 1)} кВт`} hi />
+          </div>
+        </>
+      )}
+      <Note>Бөмбөрцгийн хэрчмийн (spherical cap) томьёо: R=(a²+h²)/2h, S=2πRh. Доум хэлбэр нь ижил талбайтай тэгш өнцөгт байшингаас бага гадаргуутай тул дулаан алдагдал 20-30% бага. Үнэ нь бүрхүүлийн төрлөөс (PVC мембран, сэндвич панель, модон хавтан) их хамаарна — нийлүүлэгчийн үнээр солиорой. Геодезик хийцийн хүрээ, зангилааны нарийн тооцоог үйлдвэрлэгчээс авна.</Note>
+    </div>
+  );
+}
+
 /* ============================================================ */
 const TOOLS = [
   { id: "heat", icon: "🌡", name: "Дулаан алдагдал", desc: "Зуухны хүч, жилийн халаалтын зардал", comp: HeatLoss, cat: "Халаалт" },
@@ -598,6 +675,7 @@ const TOOLS = [
   { id: "brick", icon: "🧱", name: "Тоосгон өрлөг", desc: "Тоосго, зуурмаг, цемент, элс", comp: Brick, cat: "Барилга" },
   { id: "finishqty", icon: "🔲", name: "Плита, обой, ламинат", desc: "Өрөө + материалын хэмжээ → ширхэг, хайрцаг, рулон", comp: FinishQty, cat: "Засал" },
   { id: "plaster", icon: "🎨", name: "Шавардлага & будаг", desc: "Зуурмаг, цемент, будгийн литр", comp: PlasterPaint, cat: "Засал" },
+  { id: "dome", icon: "⛺", name: "Доум сууц", desc: "Бөмбөгөр байшин — талбай, бүрхүүл, өртөг, дулаан", comp: DomeHouse, cat: "Барилга" },
   { id: "geom", icon: "📐", name: "Талбай & эзлэхүүн", desc: "11 хэлбэрийн м², м³ — траншей, багана, овоолго", comp: Geometry, cat: "Хэрэгсэл" },
   { id: "conv", icon: "🔄", name: "Нэгж хөрвүүлэгч", desc: "Урт, жин, даралт, чадал… 10 төрлийн нэгж", comp: Converter, cat: "Хэрэгсэл" },
 ];
