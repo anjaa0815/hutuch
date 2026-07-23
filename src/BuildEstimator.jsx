@@ -3,6 +3,7 @@ import * as THREE from "three";
 import CloudProjects from "./ProjectStore.jsx";
 import { ExplainButton } from "./BudgetExplain.jsx";
 import TemplateGallery from "./HouseTemplates.jsx";
+import { FURNITURE, FURNITURE_CATS, FurnitureIcon, PlacedFurniture } from "./FurnitureCatalog.jsx";
 
 /* ============================================================
    ХӨТӨЧ — Барилгын Төсвийн Тооцоолуур v9 (hutuch.com)
@@ -478,7 +479,7 @@ function MaterialSelector({ selections, setSelections, lines }) {
 }
 
 /* ---------- 2D SVG план ---------- */
-function PlanCanvas({ rooms, setRooms, selected, setSelected, drawMode, setDrawMode }) {
+function PlanCanvas({ rooms, setRooms, selected, setSelected, drawMode, setDrawMode, furniture, setFurniture }) {
   const SCALE = 42, PAD = 1.5;
   const svgRef = useRef(null);
   const dragRef = useRef(null);
@@ -571,11 +572,23 @@ function PlanCanvas({ rooms, setRooms, selected, setSelected, drawMode, setDrawM
   };
   const cancelWall = () => { setWallPts([]); setGhost(null); };
 
+  const [selFurn, setSelFurn] = useState(null);
+  const startFurnDrag = (e, f) => {
+    e.preventDefault(); e.stopPropagation();
+    setSelFurn(f.id);
+    dragRef.current = { mode: "furn", fid: f.id, start: toM(e), orig: { x: f.x, y: f.y } };
+  };
   const onMove = (e) => {
     if (drawMode) { wallMove(e); return; }
     const d = dragRef.current;
     if (!d) return;
     const m = toM(e);
+    if (d.mode === "furn") {
+      const dx = m.x - d.start.x, dy = m.y - d.start.y;
+      setFurniture((fs) => fs.map((f) => f.id === d.fid
+        ? { ...f, x: snap(d.orig.x + dx, 0.1), y: snap(d.orig.y + dy, 0.1) } : f));
+      return;
+    }
     if (d.mode === "room") {
       const dx = snap(m.x - d.start.x, 0.5), dy = snap(m.y - d.start.y, 0.5);
       setRooms((rs) => rs.map((r) => r.id === d.id ? { ...r, points: d.orig.map((p) => ({ x: p.x + dx, y: p.y + dy })) } : r));
@@ -743,6 +756,14 @@ function PlanCanvas({ rooms, setRooms, selected, setSelected, drawMode, setDrawM
           <text x={X(rMaxX) + 36} y={(Y(rMinY) + Y(rMaxY)) / 2} stroke="none"
             transform={`rotate(90 ${X(rMaxX) + 36} ${(Y(rMinY) + Y(rMaxY)) / 2})`} textAnchor="middle">{fmt(rMaxY - rMinY)}м</text>
         </g>
+
+        {/* --- Байрлуулсан тавилга --- */}
+        {(furniture || []).map((f) => (
+          <PlacedFurniture key={f.id} item={f} X={X} Y={Y} SCALE={SCALE}
+            selected={selFurn === f.id}
+            onPointerDown={(e) => startFurnDrag(e, f)}
+            onDelete={() => { setFurniture((fs) => fs.filter((x) => x.id !== f.id)); setSelFurn(null); }} />
+        ))}
 
         {/* --- Хана зурах горим: татаж буй хана --- */}
         {drawMode && wallPts.length > 0 && (() => {
@@ -1037,6 +1058,12 @@ function RoomCard({ room, index, selected, onSelect, onChange, onDelete }) {
 export default function BuildEstimator({ onBack, preset }) {
   const [tab, setTab] = useState("plan");
   const [drawMode, setDrawMode] = useState(false);
+  const [furniture, setFurniture] = useState([]);
+  const [furnCat, setFurnCat] = useState("Унтлага");
+  const addFurniture = (def) => {
+    const c = rooms.length ? centroid(rooms[0].points) : { x: 2, y: 2 };
+    setFurniture((fs) => [...fs, { id: "f" + Date.now(), type: def.id, x: c.x, y: c.y, rot: 0, w: def.w, d: def.d }]);
+  };
   const [view, setView] = useState("2d");
   const [rooms, setRooms] = useState(preset?.rooms || DEFAULT_ROOMS);
   const [settings, setSettings] = useState(preset?.settings ? { ...DEFAULT_SETTINGS, ...preset.settings } : DEFAULT_SETTINGS);
@@ -1122,8 +1149,9 @@ export default function BuildEstimator({ onBack, preset }) {
     if (d.laborNorms) setLaborNorms((l) => ({ ...l, ...d.laborNorms }));
     if (d.mep) setMep((m) => ({ ...m, ...d.mep }));
     if (d.quote) setQuote((q) => ({ ...q, ...d.quote }));
+    if (d.furniture) setFurniture(d.furniture);
   };
-  const projectData = () => ({ rooms, settings, selections, norms, prices, laborNorms, mep, quote });
+  const projectData = () => ({ rooms, settings, selections, norms, prices, laborNorms, mep, quote, furniture });
   const importJSON = (e) => {
     const f = e.target.files?.[0];
     if (!f) return;
@@ -1213,7 +1241,7 @@ export default function BuildEstimator({ onBack, preset }) {
                   <button onClick={addL} className="rounded-lg border border-orange-600 px-2.5 py-1.5 text-sm font-medium text-orange-700 hover:bg-orange-50">+ L-хэлбэр</button>
                 </div>
               </div>
-              <div className="max-h-[460px] space-y-2 overflow-y-auto pr-1">
+              <div className="max-h-[300px] space-y-2 overflow-y-auto pr-1">
                 {rooms.map((r, i) => (
                   <RoomCard key={r.id} room={r} index={i} selected={selected === r.id}
                     onSelect={() => setSelected(r.id)}
@@ -1221,6 +1249,37 @@ export default function BuildEstimator({ onBack, preset }) {
                     onDelete={() => setRooms((rs) => rs.filter((x) => x.id !== r.id))} />
                 ))}
               </div>
+
+              {/* --- Тавилга, сантехникийн каталог --- */}
+              <div className="rounded-xl border border-stone-200 bg-white p-3 shadow-sm">
+                <h3 className="mb-2 text-[11px] font-bold uppercase tracking-wide text-stone-500">
+                  Тавилга, тоног төхөөрөмж
+                </h3>
+                <div className="mb-2 flex flex-wrap gap-1">
+                  {FURNITURE_CATS.map((c) => (
+                    <button key={c} onClick={() => setFurnCat(c)}
+                      className={`rounded-lg px-2 py-1 text-[11px] font-medium transition ${furnCat === c
+                        ? "bg-stone-800 text-white"
+                        : "bg-stone-100 text-stone-600 hover:bg-stone-200"}`}>
+                      {c}
+                    </button>
+                  ))}
+                </div>
+                <div className="grid max-h-44 grid-cols-3 gap-1.5 overflow-y-auto">
+                  {FURNITURE.filter((f) => f.cat === furnCat).map((f) => (
+                    <button key={f.id} onClick={() => addFurniture(f)} title={`${f.name} — ${f.w}×${f.d}см`}
+                      className="flex flex-col items-center rounded-lg border border-stone-200 p-1.5 transition hover:border-orange-500 hover:bg-orange-50">
+                      <FurnitureIcon type={f.icon} size={34} />
+                      <span className="mt-0.5 line-clamp-2 text-center text-[9px] leading-tight text-stone-600">{f.name}</span>
+                    </button>
+                  ))}
+                </div>
+                <p className="mt-2 text-[10px] text-stone-400">
+                  Товшиж планд нэмнэ · зурган дээр чирж зөөнө · сонгоод ✕ дарж устгана
+                  {furniture.length > 0 && <span className="ml-1 font-bold text-stone-600">({furniture.length} ширхэг)</span>}
+                </p>
+              </div>
+
               <div className="rounded-xl border border-stone-200 bg-white p-3 shadow-sm">
                 <h3 className="mb-2 text-[11px] font-bold uppercase tracking-wide text-stone-500">Байрны тохиргоо</h3>
                 <div className="grid grid-cols-2 gap-2">
@@ -1246,7 +1305,7 @@ export default function BuildEstimator({ onBack, preset }) {
               {rooms.length === 0 ? (
                 <div className="rounded-xl border border-dashed border-stone-300 bg-white p-10 text-center text-stone-400">Өрөө нэмээд планаа эхлүүлнэ үү</div>
               ) : view === "2d" ? (
-                <PlanCanvas rooms={rooms} setRooms={setRooms} selected={selected} setSelected={setSelected} drawMode={drawMode} setDrawMode={setDrawMode} />
+                <PlanCanvas rooms={rooms} setRooms={setRooms} selected={selected} setSelected={setSelected} drawMode={drawMode} setDrawMode={setDrawMode} furniture={furniture} setFurniture={setFurniture} />
               ) : (
                 <ThreeView rooms={rooms} settings={settings} geo={geo} selections={selections} />
               )}
