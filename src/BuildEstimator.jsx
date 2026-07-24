@@ -1154,11 +1154,17 @@ export default function BuildEstimator({ onBack, preset }) {
   const [wallKind, setWallKind] = useState("ext");   // ext=гадна, int=дотор
   const [tool, setTool] = useState("draw");          // draw | erase | select
   const [freeWalls, setFreeWalls] = useState([]);    // өрөө биш, дан хана
-  /* --- Буцаах (undo) --- */
-  const histRef = useRef([]);
-  const pushHist = () => {
-    histRef.current = [...histRef.current.slice(-19), JSON.stringify({ rooms, freeWalls, furniture })];
+  const [furniture, setFurniture] = useState([]);
+  const [furnCat, setFurnCat] = useState("Унтлага");
+  const addFurniture = (def) => {
+    const c = rooms.length ? centroid(rooms[0].points) : { x: 2, y: 2 };
+    setFurniture((fs) => [...fs, { id: "f" + Date.now(), type: def.id, x: c.x, y: c.y, rot: 0, w: def.w, d: def.d }]);
   };
+  const [view, setView] = useState("2d");
+  const [rooms, setRooms] = useState(preset?.rooms || []);
+
+  /* --- Буцаах (undo): rooms/freeWalls/furniture-ийн ДАРАА зарлагдана --- */
+  const histRef = useRef([]);
   const undo = () => {
     const prev = histRef.current.pop();
     if (!prev) return;
@@ -1168,16 +1174,10 @@ export default function BuildEstimator({ onBack, preset }) {
       setSelected(null);
     } catch { /* alga */ }
   };
-  /* Өөрчлөлт бүрийн өмнө түүх хадгална */
-  useEffect(() => { pushHist(); /* eslint-disable-next-line */ }, [rooms.length, freeWalls.length, furniture.length]);
-  const [furniture, setFurniture] = useState([]);
-  const [furnCat, setFurnCat] = useState("Унтлага");
-  const addFurniture = (def) => {
-    const c = rooms.length ? centroid(rooms[0].points) : { x: 2, y: 2 };
-    setFurniture((fs) => [...fs, { id: "f" + Date.now(), type: def.id, x: c.x, y: c.y, rot: 0, w: def.w, d: def.d }]);
-  };
-  const [view, setView] = useState("2d");
-  const [rooms, setRooms] = useState(preset?.rooms || []);
+  useEffect(() => {
+    histRef.current = [...histRef.current.slice(-19), JSON.stringify({ rooms, freeWalls, furniture })];
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rooms.length, freeWalls.length, furniture.length]);
   const [settings, setSettings] = useState(preset?.settings ? { ...DEFAULT_SETTINGS, ...preset.settings } : DEFAULT_SETTINGS);
   const [selections, setSelections] = useState(preset?.selections ? { ...DEFAULT_SELECTIONS, ...preset.selections } : DEFAULT_SELECTIONS);
   const [norms, setNorms] = useState(DEFAULT_NORMS);
