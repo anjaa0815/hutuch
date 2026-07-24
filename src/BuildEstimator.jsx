@@ -480,7 +480,10 @@ function MaterialSelector({ selections, setSelections, lines }) {
 
 /* ---------- 2D SVG план ---------- */
 function PlanCanvas({ rooms, setRooms, selected, setSelected, drawMode, setDrawMode, furniture, setFurniture, wallKind, tool, freeWalls, setFreeWalls }) {
-  const SCALE = 42, PAD = 1.5;
+  /* Дэлгэцийн хэмжээнээс хамааруулж масштаб — гар утсанд жижиг */
+  const isMobile = typeof window !== "undefined" && window.innerWidth < 640;
+  const SCALE = isMobile ? 30 : 42, PAD = isMobile ? 1.0 : 1.5;
+  const HIT = isMobile ? 1.6 : 1;   // хуруунд зориулж бариулуудыг томсгох коэффициент
   const svgRef = useRef(null);
   const dragRef = useRef(null);
   /* Хана зурах горим: татаж буй цэгүүд */
@@ -727,7 +730,8 @@ function PlanCanvas({ rooms, setRooms, selected, setSelected, drawMode, setDrawM
   return (
     <div className="overflow-auto rounded-xl border border-stone-300 bg-stone-50 shadow-inner">
       <svg ref={svgRef} viewBox={`0 0 ${vw} ${vh}`}
-        className={`min-w-[520px] touch-none select-none ${drawMode ? "cursor-crosshair" : ""}`}
+        className={`w-full touch-none select-none ${drawMode ? "cursor-crosshair" : ""}`}
+        style={{ maxWidth: "100%", height: "auto" }}
         onPointerMove={onMove} onPointerUp={onUp} onPointerLeave={onUp}
         onClick={wallClick}
         onDoubleClick={(e) => { if (drawMode) { e.preventDefault(); e.stopPropagation(); finishWall(); } }}
@@ -821,12 +825,12 @@ function PlanCanvas({ rooms, setRooms, selected, setSelected, drawMode, setDrawM
                 const q = r.points[(j + 1) % r.points.length];
                 return (
                   <g key={j}>
-                    <rect x={X((p.x + q.x) / 2) - 4} y={Y((p.y + q.y) / 2) - 4} width={8} height={8}
+                    <rect x={X((p.x + q.x) / 2) - 4 * HIT} y={Y((p.y + q.y) / 2) - 4 * HIT} width={8 * HIT} height={8 * HIT}
                       fill="#fff" stroke="#ea580c" strokeWidth={1.2} className="cursor-copy"
                       onPointerDown={(e) => startMidDrag(e, r, j)}>
                       <title>Чирж шинэ цэг нэмнэ</title>
                     </rect>
-                    <circle cx={X(p.x)} cy={Y(p.y)} r={6} fill="#ea580c" stroke="#fff" strokeWidth={1.5}
+                    <circle cx={X(p.x)} cy={Y(p.y)} r={6 * HIT} fill="#ea580c" stroke="#fff" strokeWidth={1.5}
                       className="cursor-grab"
                       onPointerDown={(e) => startVertexDrag(e, r, j)}
                       onDoubleClick={() => deleteVertex(r, j)}>
@@ -924,11 +928,11 @@ function PlanCanvas({ rooms, setRooms, selected, setSelected, drawMode, setDrawM
             <g>
               {segs}
               {pts.map((p, i) => (
-                <circle key={"wp" + i} cx={X(p.x)} cy={Y(p.y)} r={4.5}
+                <circle key={"wp" + i} cx={X(p.x)} cy={Y(p.y)} r={5 * HIT}
                   fill={i === 0 ? "#ea580c" : "#fff"} stroke="#44403c" strokeWidth={1.5} />
               ))}
               {wallPts.length >= 3 && (
-                <circle cx={X(wallPts[0].x)} cy={Y(wallPts[0].y)} r={9} fill="none" stroke="#ea580c" strokeWidth={2} strokeDasharray="3 3" />
+                <circle cx={X(wallPts[0].x)} cy={Y(wallPts[0].y)} r={9 * HIT} fill="none" stroke="#ea580c" strokeWidth={2} strokeDasharray="3 3" />
               )}
             </g>
           );
@@ -1379,10 +1383,10 @@ export default function BuildEstimator({ onBack, preset }) {
       <main className="mx-auto max-w-6xl p-4">
         {tab === "plan" && (
           <div className="grid gap-4 lg:grid-cols-[380px_1fr]">
-            <div className="space-y-3">
+            <div className="order-2 space-y-3 lg:order-1">
               <div className="flex items-center justify-between gap-2">
-                <h2 className="text-sm font-bold uppercase tracking-wide text-stone-600">Өрөөний жагсаалт</h2>
-                <div className="flex flex-wrap items-center gap-1">
+                <h2 className="hidden text-sm font-bold uppercase tracking-wide text-stone-600 sm:block">Өрөөний жагсаалт</h2>
+                <div className="flex flex-wrap items-center gap-1 overflow-x-auto pb-1">
                   {/* Багажнууд: зурах / устгах / сонгох */}
                   <div className="flex overflow-hidden rounded-lg border border-stone-300">
                     {[
@@ -1501,10 +1505,10 @@ export default function BuildEstimator({ onBack, preset }) {
                 </div>
               </div>
             </div>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
+            <div className="order-1 space-y-3 lg:order-2">
+              <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="flex gap-1 rounded-lg bg-stone-200 p-1">
-                  {[["2d", "▦ 2D Зураг"], ["3d", "◈ 3D Харагдал"]].map(([v, lbl]) => (
+                  {[["2d", "▦ 2D"], ["3d", "◈ 3D"]].map(([v, lbl]) => (
                     <button key={v} onClick={() => setView(v)}
                       className={`rounded-md px-3 py-1.5 text-sm font-medium transition ${view === v ? "bg-white text-orange-700 shadow" : "text-stone-500 hover:text-stone-800"}`}>
                       {lbl}

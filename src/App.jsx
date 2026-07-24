@@ -1687,6 +1687,51 @@ const HomeView = ({ onNavigate, onSelectCategory, onStartTemplate }) => (
                 <img src="logo.png" alt="Background" className="w-64 h-64 object-contain" />
             </div>
         </div>
+
+        {/* Шууд тооцоолуур эхлүүлэх */}
+        <div className="mx-4 sm:mx-0 mb-12">
+            <div className="rounded-[2rem] border-2 border-orange-200 dark:border-orange-900/50 bg-gradient-to-br from-orange-50 to-white dark:from-orange-950/20 dark:to-slate-900 p-6 sm:p-8">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
+                    <div className="flex-1">
+                        <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white mb-2">
+                            📐 Байшингаа зурж, төсвөө хормын дотор гарга
+                        </h2>
+                        <p className="text-slate-600 dark:text-slate-400 text-sm mb-4">
+                            Өрөөгөө зурна → материалаа сонгоно → БНбД нормоор материал, ажлын хөлс, нийт төсөв гарна.
+                            Гар утаснаас ч ажиллана.
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                            <button onClick={() => onNavigate('estimator')}
+                                className="rounded-2xl bg-orange-600 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-orange-600/20 transition hover:bg-orange-700">
+                                Тооцоолуур эхлүүлэх →
+                            </button>
+                            <button onClick={() => onNavigate('planner')}
+                                className="rounded-2xl border-2 border-slate-300 dark:border-slate-700 px-5 py-3 text-sm font-bold text-slate-700 dark:text-slate-200 transition hover:border-orange-500">
+                                Хурдан төлөвлөгч
+                            </button>
+                        </div>
+                    </div>
+                    {/* Жижиг план урьдчилсан харагдац */}
+                    <div className="hidden sm:block shrink-0">
+                        <svg width="180" height="130" viewBox="0 0 180 130" className="rounded-xl bg-white dark:bg-slate-800 shadow-inner">
+                            <defs>
+                                <pattern id="hgrid" width="15" height="15" patternUnits="userSpaceOnUse">
+                                    <path d="M 15 0 L 0 0 0 15" fill="none" stroke="#e7e5e4" strokeWidth="0.5" />
+                                </pattern>
+                            </defs>
+                            <rect width="180" height="130" fill="url(#hgrid)" />
+                            <polygon points="20,25 95,25 95,75 20,75" fill="#fed7aa" fillOpacity="0.5" stroke="#44403c" strokeWidth="4" strokeLinejoin="round" />
+                            <polygon points="95,25 155,25 155,105 95,105" fill="#bfdbfe" fillOpacity="0.5" stroke="#44403c" strokeWidth="4" strokeLinejoin="round" />
+                            <polygon points="20,75 95,75 95,105 20,105" fill="#bbf7d0" fillOpacity="0.5" stroke="#a8a29e" strokeWidth="2" strokeLinejoin="round" />
+                            <path d="M50 25 A 12 12 0 0 1 62 37" fill="none" stroke="#ea580c" strokeWidth="2" />
+                            <line x1="115" y1="25" x2="140" y2="25" stroke="#0ea5e9" strokeWidth="4" />
+                            <text x="57" y="55" textAnchor="middle" fontSize="9" fill="#57534e" fontFamily="monospace">3.7м²</text>
+                            <text x="125" y="70" textAnchor="middle" fontSize="9" fill="#57534e" fontFamily="monospace">4.8м²</text>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </div>
         
         <div className="px-2 mb-10">
             <div className="flex justify-between items-center mb-4 px-2">
