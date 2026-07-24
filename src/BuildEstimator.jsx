@@ -479,7 +479,7 @@ function MaterialSelector({ selections, setSelections, lines }) {
 }
 
 /* ---------- 2D SVG план ---------- */
-function PlanCanvas({ rooms, setRooms, selected, setSelected, drawMode, setDrawMode, furniture, setFurniture }) {
+function PlanCanvas({ rooms, setRooms, selected, setSelected, drawMode, setDrawMode, furniture, setFurniture, wallKind }) {
   const SCALE = 42, PAD = 1.5;
   const svgRef = useRef(null);
   const dragRef = useRef(null);
@@ -545,22 +545,30 @@ function PlanCanvas({ rooms, setRooms, selected, setSelected, drawMode, setDrawM
     if (dy > dx && dx < 0.3) return { x: from.x, y: to.y };
     return to;
   };
+  /* Зурсан цэгүүдээс өрөө үүсгэх — битүүлэх шаардлагагүй, 3+ цэг байхад л болно */
+  const finishWall = (pts = wallPts) => {
+    if (pts.length < 3) { setWallPts([]); setGhost(null); return; }
+    const id = "r" + Date.now();
+    setRooms((rs) => [...rs, {
+      id,
+      name: `${wallKind === "ext" ? "Гадна" : "Дотор"} өрөө ${rs.length + 1}`,
+      points: pts.map((p) => ({ x: p.x, y: p.y })),
+      openings: [],
+      wallKind,
+    }]);
+    setSelected(id);
+    setWallPts([]); setGhost(null);
+  };
   const wallClick = (e) => {
     if (!drawMode) return;
     e.preventDefault(); e.stopPropagation();
     const raw = toM(e);
     let pt = snapToExisting(raw);
     if (wallPts.length > 0) pt = { ...pt, ...orthoLock(wallPts[wallPts.length - 1], pt) };
-    // Эхний цэг дээр буцаж ирвэл битүүлж, өрөө үүсгэнэ
+    // Эхний цэг дээр буцаж ирвэл шууд битүүлнэ (хүсвэл)
     if (wallPts.length >= 3) {
       const first = wallPts[0];
-      if (Math.hypot(pt.x - first.x, pt.y - first.y) < SNAP_DIST) {
-        const id = "r" + Date.now();
-        setRooms((rs) => [...rs, { id, name: `Өрөө ${rs.length + 1}`, points: wallPts.map((p) => ({ x: p.x, y: p.y })), openings: [] }]);
-        setSelected(id);
-        setWallPts([]); setGhost(null);
-        return;
-      }
+      if (Math.hypot(pt.x - first.x, pt.y - first.y) < SNAP_DIST) { finishWall(); return; }
     }
     setWallPts((w) => [...w, { x: pt.x, y: pt.y }]);
   };
@@ -571,6 +579,7 @@ function PlanCanvas({ rooms, setRooms, selected, setSelected, drawMode, setDrawM
     pt = { ...pt, ...orthoLock(wallPts[wallPts.length - 1], pt) };
     setGhost(pt);
   };
+  const undoWallPt = () => setWallPts((w) => w.slice(0, -1));
   const cancelWall = () => { setWallPts([]); setGhost(null); };
 
   const [selFurn, setSelFurn] = useState(null);
@@ -641,7 +650,8 @@ function PlanCanvas({ rooms, setRooms, selected, setSelected, drawMode, setDrawM
         className={`min-w-[520px] touch-none select-none ${drawMode ? "cursor-crosshair" : ""}`}
         onPointerMove={onMove} onPointerUp={onUp} onPointerLeave={onUp}
         onClick={wallClick}
-        onDoubleClick={() => drawMode && cancelWall()}>
+        onDoubleClick={(e) => { if (drawMode) { e.preventDefault(); e.stopPropagation(); finishWall(); } }}
+        onContextMenu={(e) => { if (drawMode) { e.preventDefault(); finishWall(); } }}>
         {gridLines}
         {rooms.map((r, i) => {
           const sel = selected === r.id;
@@ -668,8 +678,9 @@ function PlanCanvas({ rooms, setRooms, selected, setSelected, drawMode, setDrawM
           return (
             <g key={r.id}>
               <path d={path} fill={ROOM_COLORS[i % ROOM_COLORS.length]}
-                stroke={sel ? "#ea580c" : "#57534e"} strokeWidth={sel ? 2.5 : 1.4}
-                strokeDasharray={sel ? "" : "6 3"} className="cursor-move"
+                stroke={sel ? "#ea580c" : (r.wallKind === "int" ? "#a8a29e" : "#44403c")}
+                strokeWidth={sel ? 4 : (r.wallKind === "int" ? 2 : 5)}
+                strokeLinejoin="round" className="cursor-move"
                 onPointerDown={(e) => startRoomDrag(e, r)} />
               <text x={X(c.x)} y={Y(c.y) - 5} textAnchor="middle" fontSize={13} fontWeight="600" fill="#292524" pointerEvents="none">{r.name}</text>
               <text x={X(c.x)} y={Y(c.y) + 13} textAnchor="middle" fontSize={11} fill="#57534e" fontFamily="monospace" pointerEvents="none">
@@ -800,7 +811,7 @@ function PlanCanvas({ rooms, setRooms, selected, setSelected, drawMode, setDrawM
             segs.push(
               <g key={"ws" + i}>
                 <line x1={X(a.x)} y1={Y(a.y)} x2={X(b.x)} y2={Y(b.y)}
-                  stroke={isGhost ? "#fb923c" : "#44403c"} strokeWidth={WALL_PX}
+                  stroke={isGhost ? "#fb923c" : (wallKind === "ext" ? "#44403c" : "#a8a29e")} strokeWidth={wallKind === "ext" ? WALL_PX : WALL_PX * 0.6}
                   strokeLinecap="square" strokeDasharray={isGhost ? "6 4" : undefined} opacity={isGhost ? 0.7 : 1} />
                 {len > 0.4 && (
                   <text x={mx} y={my - 8} textAnchor="middle" transform={`rotate(${deg} ${mx} ${my - 8})`}
@@ -1007,6 +1018,12 @@ function RoomCard({ room, index, selected, onSelect, onChange, onDelete }) {
         <span className="h-3 w-3 shrink-0 rounded-full" style={{ background: ROOM_COLORS[index % ROOM_COLORS.length] }} />
         <input value={room.name} onChange={(e) => set({ name: e.target.value })}
           className="w-full rounded-md border border-stone-200 px-2 py-1 text-sm font-medium focus:border-orange-500 focus:outline-none" />
+        <button onClick={(e) => { e.stopPropagation(); set({ wallKind: room.wallKind === "int" ? "ext" : "int" }); }}
+          title="Гадна / дотор хана сэлгэх"
+          className={`shrink-0 rounded-md px-2 py-1 text-[10px] font-bold transition ${room.wallKind === "int"
+            ? "bg-stone-200 text-stone-600" : "bg-stone-700 text-white"}`}>
+          {room.wallKind === "int" ? "ДОТОР" : "ГАДНА"}
+        </button>
         <button onClick={(e) => { e.stopPropagation(); onDelete(); }}
           className="rounded-md px-2 py-1 text-stone-400 hover:bg-red-50 hover:text-red-600" title="Устгах">✕</button>
       </div>
@@ -1074,6 +1091,7 @@ function RoomCard({ room, index, selected, onSelect, onChange, onDelete }) {
 export default function BuildEstimator({ onBack, preset }) {
   const [tab, setTab] = useState("plan");
   const [drawMode, setDrawMode] = useState(!preset?.rooms);
+  const [wallKind, setWallKind] = useState("ext");   // ext=гадна, int=дотор
   const [furniture, setFurniture] = useState([]);
   const [furnCat, setFurnCat] = useState("Унтлага");
   const addFurniture = (def) => {
@@ -1252,6 +1270,18 @@ export default function BuildEstimator({ onBack, preset }) {
                       : "border border-stone-400 text-stone-700 hover:bg-stone-100"}`}>
                     ✏️ Хана зурах
                   </button>
+                  {drawMode && (
+                    <div className="flex overflow-hidden rounded-lg border border-stone-300">
+                      {[["ext", "Гадна", "Гадна хана — дулаалгатай, зузаан"], ["int", "Дотор", "Дотор хана — таславч"]].map(([k, label, title]) => (
+                        <button key={k} onClick={() => setWallKind(k)} title={title}
+                          className={`px-2 py-1.5 text-xs font-bold transition ${wallKind === k
+                            ? "bg-stone-700 text-white"
+                            : "bg-white text-stone-600 hover:bg-stone-100"}`}>
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                   <TemplateGallery onApply={(d) => { applyProject(d); setSelected(null); }} />
                   <button onClick={addRect} className="rounded-lg bg-orange-600 px-2.5 py-1.5 text-sm font-medium text-white hover:bg-orange-700">+ Тэгш өнцөгт</button>
                   <button onClick={addL} className="rounded-lg border border-orange-600 px-2.5 py-1.5 text-sm font-medium text-orange-700 hover:bg-orange-50">+ L-хэлбэр</button>
@@ -1320,10 +1350,10 @@ export default function BuildEstimator({ onBack, preset }) {
               </div>
               {view === "2d" ? (
                 <>
-                  <PlanCanvas rooms={rooms} setRooms={setRooms} selected={selected} setSelected={setSelected} drawMode={drawMode} setDrawMode={setDrawMode} furniture={furniture} setFurniture={setFurniture} />
+                  <PlanCanvas rooms={rooms} setRooms={setRooms} selected={selected} setSelected={setSelected} drawMode={drawMode} setDrawMode={setDrawMode} furniture={furniture} setFurniture={setFurniture} wallKind={wallKind} />
                   {drawMode && (
                     <p className="mt-2 rounded-lg bg-stone-800 px-3 py-2 text-[11px] leading-snug text-white">
-                      ✏️ <b>ЗУРАХ ГОРИМ</b> — товшиж хананы булан тавина · дараагийн товшилт хана татна · эхний улбар шар цэг рүү товшиж битүүлбэл өрөө үүснэ · давхар товшиж цуцлана
+                      ✏️ <b>ЗУРАХ ГОРИМ ({wallKind === "ext" ? "гадна хана" : "дотор хана"})</b> — товшиж булангуудаа тавина · <b>давхар товшиж эсвэл баруун товчоор дуусгана</b> (битүүлэх шаардлагагүй) · эхний цэг рүү товшвол автоматаар битүүлнэ
                     </p>
                   )}
                 </>
