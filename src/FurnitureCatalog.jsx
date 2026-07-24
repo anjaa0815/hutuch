@@ -222,7 +222,7 @@ export function FurnitureIcon({ type, size = 100, color = "#57534e" }) {
 }
 
 /* Планд байрлуулсан нэг тавилга (метрээр, эргэлттэй) */
-export function PlacedFurniture({ item, X, Y, SCALE, selected, onPointerDown, onDelete }) {
+export function PlacedFurniture({ item, X, Y, SCALE, selected, onPointerDown, onDelete, onRotate }) {
   const w = (item.w / 100) * SCALE;  // см → м → пиксел
   const d = (item.d / 100) * SCALE;
   const cx = X(item.x), cy = Y(item.y);
@@ -238,10 +238,16 @@ export function PlacedFurniture({ item, X, Y, SCALE, selected, onPointerDown, on
       </g>
       {selected && (
         <g>
+          {/* Устгах */}
           <circle cx={w / 2 + 10} cy={-d / 2 - 10} r={9} fill="#ef4444"
             onPointerDown={(e) => { e.stopPropagation(); onDelete(); }} style={{ cursor: "pointer" }} />
           <text x={w / 2 + 10} y={-d / 2 - 6} textAnchor="middle" fill="#fff" fontSize="12" fontWeight="700"
             style={{ pointerEvents: "none" }}>×</text>
+          {/* Эргүүлэх — товшихад 90° эргэнэ, чирвэл чөлөөтэй эргэнэ */}
+          <circle cx={-w / 2 - 10} cy={-d / 2 - 10} r={9} fill="#0ea5e9"
+            onPointerDown={(e) => { e.stopPropagation(); onRotate(e); }} style={{ cursor: "grab" }} />
+          <text x={-w / 2 - 10} y={-d / 2 - 6} textAnchor="middle" fill="#fff" fontSize="11" fontWeight="700"
+            style={{ pointerEvents: "none" }}>⟳</text>
         </g>
       )}
     </g>

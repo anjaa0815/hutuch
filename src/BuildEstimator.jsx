@@ -629,6 +629,15 @@ function PlanCanvas({ rooms, setRooms, selected, setSelected, drawMode, setDrawM
     setSelFurn(f.id);
     dragRef.current = { mode: "furn", fid: f.id, start: toM(e), orig: { x: f.x, y: f.y } };
   };
+  const startFurnRotate = (e, f) => {
+    e.preventDefault(); e.stopPropagation();
+    setSelFurn(f.id);
+    const m = toM(e);
+    dragRef.current = {
+      mode: "rot", fid: f.id, moved: false,
+      cx: f.x, cy: f.y, startAng: Math.atan2(m.y - f.y, m.x - f.x) * 180 / Math.PI, origRot: f.rot || 0,
+    };
+  };
   const onMove = (e) => {
     if (drawMode) { wallMove(e); return; }
     const d = dragRef.current;
@@ -640,14 +649,22 @@ function PlanCanvas({ rooms, setRooms, selected, setSelected, drawMode, setDrawM
         ? { ...f, x: snap(d.orig.x + dx, 0.1), y: snap(d.orig.y + dy, 0.1) } : f));
       return;
     }
+    if (d.mode === "rot") {
+      const ang = Math.atan2(m.y - d.cy, m.x - d.cx) * 180 / Math.PI;
+      let rot = d.origRot + (ang - d.startAng);
+      // 15°-ийн алхамд наалдана, 0/90/180/270-д хүчтэй
+      rot = Math.round(rot / 15) * 15;
+      d.moved = true;
+      setFurniture((fs) => fs.map((f) => f.id === d.fid ? { ...f, rot: ((rot % 360) + 360) % 360 } : f));
+      return;
+    }
     if (d.mode === "room") {
       const dx = snap(m.x - d.start.x, 0.5), dy = snap(m.y - d.start.y, 0.5);
       setRooms((rs) => rs.map((r) => r.id === d.id ? { ...r, points: d.orig.map((p) => ({ x: p.x + dx, y: p.y + dy })) } : r));
     } else if (d.mode === "opening") {
-      setRooms((rs) => rs.map((r) => {
-        if (r.id !== d.id) return r;
-        /* Заагчид хамгийн ойр ирмэгийг олж, түүн дээрх t байрлалыг тооцно */
-        let best = null;
+      /* Хаалга/цонх — БҮХ өрөөний хананаас хамгийн ойрыг хайж, шаардвал өөр өрөө рүү шилжинэ */
+      let best = null;
+      rooms.forEach((r) => {
         r.points.forEach((p, j) => {
           const q = r.points[(j + 1) % r.points.length];
           const ex = q.x - p.x, ey = q.y - p.y;
@@ -656,18 +673,40 @@ function PlanCanvas({ rooms, setRooms, selected, setSelected, drawMode, setDrawM
           const t = Math.max(0.05, Math.min(0.95, ((m.x - p.x) * ex + (m.y - p.y) * ey) / len2));
           const px = p.x + ex * t, py = p.y + ey * t;
           const dist = Math.hypot(m.x - px, m.y - py);
-          if (!best || dist < best.dist) best = { j, t, dist };
+          if (!best || dist < best.dist) best = { rid: r.id, j, t, dist };
         });
-        if (!best) return r;
-        return { ...r, openings: (r.openings || []).map((o) =>
-          o.id === d.oid ? { ...o, edge: best.j, t: Math.round(best.t * 40) / 40 } : o) };
-      }));
+      });
+      if (!best) return;
+      const srcRoom = rooms.find((r) => r.id === d.id);
+      const op = (srcRoom?.openings || []).find((o) => o.id === d.oid);
+      if (!op) return;
+      if (best.rid === d.id) {
+        // Тухайн өрөөндөө хэвээр — зөвхөн байрлал шинэчилнэ
+        setRooms((rs) => rs.map((r) => r.id !== d.id ? r : {
+          ...r, openings: (r.openings || []).map((o) =>
+            o.id === d.oid ? { ...o, edge: best.j, t: Math.round(best.t * 40) / 40 } : o) }));
+      } else {
+        // Өөр өрөө рүү шилжүүлэх
+        setRooms((rs) => rs.map((r) => {
+          if (r.id === d.id) return { ...r, openings: (r.openings || []).filter((o) => o.id !== d.oid) };
+          if (r.id === best.rid) return { ...r, openings: [...(r.openings || []), { ...op, edge: best.j, t: Math.round(best.t * 40) / 40 }] };
+          return r;
+        }));
+        dragRef.current = { ...d, id: best.rid };
+      }
     } else {
       setRooms((rs) => rs.map((r) => r.id === d.id
         ? { ...r, points: r.points.map((p, i) => (i === d.idx ? { x: snap(m.x), y: snap(m.y) } : p)) } : r));
     }
   };
-  const onUp = () => (dragRef.current = null);
+  const onUp = () => {
+    const d = dragRef.current;
+    if (d && d.mode === "rot" && !d.moved) {
+      // Бариулыг зүгээр товшсон = 90° эргүүлэх
+      setFurniture((fs) => fs.map((f) => f.id === d.fid ? { ...f, rot: (((f.rot || 0) + 90) % 360) } : f));
+    }
+    dragRef.current = null;
+  };
   const deleteVertex = (room, idx) => {
     if (room.points.length <= 3) return;
     setRooms((rs) => rs.map((r) => r.id === room.id
@@ -853,6 +892,7 @@ function PlanCanvas({ rooms, setRooms, selected, setSelected, drawMode, setDrawM
           <PlacedFurniture key={f.id} item={f} X={X} Y={Y} SCALE={SCALE}
             selected={selFurn === f.id}
             onPointerDown={(e) => startFurnDrag(e, f)}
+            onRotate={(e) => startFurnRotate(e, f)}
             onDelete={() => { setFurniture((fs) => fs.filter((x) => x.id !== f.id)); setSelFurn(null); }} />
         ))}
 
@@ -1380,6 +1420,32 @@ export default function BuildEstimator({ onBack, preset }) {
                     <button title="Бүгдийг цэвэрлэх"
                       onClick={() => { if (confirm("Бүх зургийг цэвэрлэх үү?")) { setRooms([]); setFreeWalls([]); setFurniture([]); setSelected(null); } }}
                       className="rounded-lg border border-red-300 px-2.5 py-1.5 text-sm text-red-600 hover:bg-red-50">🗑</button>
+                  )}
+                  {/* Хаалга, цонх шууд нэмэх */}
+                  {rooms.length > 0 && (
+                    <div className="flex overflow-hidden rounded-lg border border-stone-300">
+                      {[["door", "🚪", "Хаалга нэмэх"], ["win", "🪟", "Цонх нэмэх"]].map(([type, icon, title]) => (
+                        <button key={type} title={title}
+                          onClick={() => {
+                            const rid = selected || rooms[0].id;
+                            setRooms((rs) => rs.map((r) => {
+                              if (r.id !== rid) return r;
+                              const edges = r.points.map((p, j) => {
+                                const q = r.points[(j + 1) % r.points.length];
+                                return { j, len: Math.hypot(q.x - p.x, q.y - p.y) };
+                              }).sort((a, b) => b.len - a.len);
+                              const used = (r.openings || []).map((o) => o.edge);
+                              const edge = (edges.find((e) => !used.includes(e.j)) || edges[0]).j;
+                              const def = type === "win" ? { w: 1.2, h: 1.4 } : { w: 0.9, h: 2.1 };
+                              return { ...r, openings: [...(r.openings || []), { id: uid(), type, edge, t: 0.5, ...def }] };
+                            }));
+                            setSelected(rid);
+                          }}
+                          className="bg-white px-2.5 py-1.5 text-sm text-stone-600 transition hover:bg-stone-100">
+                          {icon}
+                        </button>
+                      ))}
+                    </div>
                   )}
                   <TemplateGallery onApply={(d) => { applyProject(d); setSelected(null); }} />
                   <button onClick={addRect} className="rounded-lg bg-orange-600 px-2.5 py-1.5 text-sm font-medium text-white hover:bg-orange-700">+ Тэгш өнцөгт</button>
