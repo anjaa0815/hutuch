@@ -479,7 +479,7 @@ function MaterialSelector({ selections, setSelections, lines }) {
 }
 
 /* ---------- 2D SVG план ---------- */
-function PlanCanvas({ rooms, setRooms, selected, setSelected, drawMode, setDrawMode, furniture, setFurniture, wallKind }) {
+function PlanCanvas({ rooms, setRooms, selected, setSelected, drawMode, setDrawMode, furniture, setFurniture, wallKind, tool, freeWalls, setFreeWalls }) {
   const SCALE = 42, PAD = 1.5;
   const svgRef = useRef(null);
   const dragRef = useRef(null);
@@ -547,6 +547,12 @@ function PlanCanvas({ rooms, setRooms, selected, setSelected, drawMode, setDrawM
   };
   /* Зурсан цэгүүдээс өрөө үүсгэх — битүүлэх шаардлагагүй, 3+ цэг байхад л болно */
   const finishWall = (pts = wallPts) => {
+    // 2 цэг = чөлөөт хана (өрөө биш) — таславч, хашаа гэх мэт
+    if (pts.length === 2) {
+      setFreeWalls((ws) => [...ws, { id: "w" + Date.now(), a: pts[0], b: pts[1], kind: wallKind }]);
+      setWallPts([]); setGhost(null);
+      return;
+    }
     if (pts.length < 3) { setWallPts([]); setGhost(null); return; }
     const id = "r" + Date.now();
     setRooms((rs) => [...rs, {
@@ -559,7 +565,42 @@ function PlanCanvas({ rooms, setRooms, selected, setSelected, drawMode, setDrawM
     setSelected(id);
     setWallPts([]); setGhost(null);
   };
+  /* Устгагч: элемент дээр товшиход устгана */
+  const eraseAt = (m) => {
+    // Чөлөөт хана (шугамд ойр эсэх)
+    const near = (fw) => {
+      const { a, b } = fw;
+      const L2 = (b.x - a.x) ** 2 + (b.y - a.y) ** 2;
+      if (L2 === 0) return Math.hypot(m.x - a.x, m.y - a.y);
+      let t = ((m.x - a.x) * (b.x - a.x) + (m.y - a.y) * (b.y - a.y)) / L2;
+      t = Math.max(0, Math.min(1, t));
+      return Math.hypot(m.x - (a.x + t * (b.x - a.x)), m.y - (a.y + t * (b.y - a.y)));
+    };
+    const hitWall = (freeWalls || []).find((fw) => near(fw) < 0.25);
+    if (hitWall) { setFreeWalls((ws) => ws.filter((w) => w.id !== hitWall.id)); return true; }
+    // Тавилга
+    const hitF = (furniture || []).find((f) => Math.hypot(m.x - f.x, m.y - f.y) < Math.max(f.w, f.d) / 200);
+    if (hitF) { setFurniture((fs) => fs.filter((x) => x.id !== hitF.id)); return true; }
+    // Өрөө (дотор нь эсэх)
+    const inPoly = (pt, poly) => {
+      let inside = false;
+      for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+        const xi = poly[i].x, yi = poly[i].y, xj = poly[j].x, yj = poly[j].y;
+        if ((yi > pt.y) !== (yj > pt.y) && pt.x < ((xj - xi) * (pt.y - yi)) / (yj - yi) + xi) inside = !inside;
+      }
+      return inside;
+    };
+    const hitR = rooms.find((r) => inPoly(m, r.points));
+    if (hitR) { setRooms((rs) => rs.filter((r) => r.id !== hitR.id)); setSelected(null); return true; }
+    return false;
+  };
+
   const wallClick = (e) => {
+    if (tool === "erase") {
+      e.preventDefault(); e.stopPropagation();
+      eraseAt(toM(e));
+      return;
+    }
     if (!drawMode) return;
     e.preventDefault(); e.stopPropagation();
     const raw = toM(e);
@@ -787,6 +828,25 @@ function PlanCanvas({ rooms, setRooms, selected, setSelected, drawMode, setDrawM
             </text>
           </g>
         )}
+
+        {/* --- Чөлөөт хана (өрөө биш, дан хана) --- */}
+        {(freeWalls || []).map((w) => {
+          const len = Math.hypot(w.b.x - w.a.x, w.b.y - w.a.y);
+          const mx = (X(w.a.x) + X(w.b.x)) / 2, my = (Y(w.a.y) + Y(w.b.y)) / 2;
+          let deg = Math.atan2(w.b.y - w.a.y, w.b.x - w.a.x) * 180 / Math.PI;
+          if (deg > 90 || deg <= -90) deg += 180;
+          return (
+            <g key={w.id} className={tool === "erase" ? "cursor-pointer" : ""}>
+              <line x1={X(w.a.x)} y1={Y(w.a.y)} x2={X(w.b.x)} y2={Y(w.b.y)}
+                stroke={w.kind === "int" ? "#a8a29e" : "#44403c"}
+                strokeWidth={w.kind === "int" ? 4 : 7} strokeLinecap="square" />
+              {len > 0.5 && (
+                <text x={mx} y={my - 7} textAnchor="middle" transform={`rotate(${deg} ${mx} ${my - 7})`}
+                  className="fill-stone-500 font-mono" fontSize="10">{fmt(len)}м</text>
+              )}
+            </g>
+          );
+        })}
 
         {/* --- Байрлуулсан тавилга --- */}
         {(furniture || []).map((f) => (
@@ -1092,6 +1152,24 @@ export default function BuildEstimator({ onBack, preset }) {
   const [tab, setTab] = useState("plan");
   const [drawMode, setDrawMode] = useState(!preset?.rooms);
   const [wallKind, setWallKind] = useState("ext");   // ext=гадна, int=дотор
+  const [tool, setTool] = useState("draw");          // draw | erase | select
+  const [freeWalls, setFreeWalls] = useState([]);    // өрөө биш, дан хана
+  /* --- Буцаах (undo) --- */
+  const histRef = useRef([]);
+  const pushHist = () => {
+    histRef.current = [...histRef.current.slice(-19), JSON.stringify({ rooms, freeWalls, furniture })];
+  };
+  const undo = () => {
+    const prev = histRef.current.pop();
+    if (!prev) return;
+    try {
+      const d = JSON.parse(prev);
+      setRooms(d.rooms || []); setFreeWalls(d.freeWalls || []); setFurniture(d.furniture || []);
+      setSelected(null);
+    } catch { /* alga */ }
+  };
+  /* Өөрчлөлт бүрийн өмнө түүх хадгална */
+  useEffect(() => { pushHist(); /* eslint-disable-next-line */ }, [rooms.length, freeWalls.length, furniture.length]);
   const [furniture, setFurniture] = useState([]);
   const [furnCat, setFurnCat] = useState("Унтлага");
   const addFurniture = (def) => {
@@ -1184,8 +1262,9 @@ export default function BuildEstimator({ onBack, preset }) {
     if (d.mep) setMep((m) => ({ ...m, ...d.mep }));
     if (d.quote) setQuote((q) => ({ ...q, ...d.quote }));
     if (d.furniture) setFurniture(d.furniture);
+    if (d.freeWalls) setFreeWalls(d.freeWalls);
   };
-  const projectData = () => ({ rooms, settings, selections, norms, prices, laborNorms, mep, quote, furniture });
+  const projectData = () => ({ rooms, settings, selections, norms, prices, laborNorms, mep, quote, furniture, freeWalls });
   const importJSON = (e) => {
     const f = e.target.files?.[0];
     if (!f) return;
@@ -1350,10 +1429,15 @@ export default function BuildEstimator({ onBack, preset }) {
               </div>
               {view === "2d" ? (
                 <>
-                  <PlanCanvas rooms={rooms} setRooms={setRooms} selected={selected} setSelected={setSelected} drawMode={drawMode} setDrawMode={setDrawMode} furniture={furniture} setFurniture={setFurniture} wallKind={wallKind} />
-                  {drawMode && (
+                  <PlanCanvas rooms={rooms} setRooms={setRooms} selected={selected} setSelected={setSelected} drawMode={drawMode} setDrawMode={setDrawMode} furniture={furniture} setFurniture={setFurniture} wallKind={wallKind} tool={tool} freeWalls={freeWalls} setFreeWalls={setFreeWalls} />
+                  {tool === "draw" && (
                     <p className="mt-2 rounded-lg bg-stone-800 px-3 py-2 text-[11px] leading-snug text-white">
-                      ✏️ <b>ЗУРАХ ГОРИМ ({wallKind === "ext" ? "гадна хана" : "дотор хана"})</b> — товшиж булангуудаа тавина · <b>давхар товшиж эсвэл баруун товчоор дуусгана</b> (битүүлэх шаардлагагүй) · эхний цэг рүү товшвол автоматаар битүүлнэ
+                      ✏️ <b>ЗУРАХ ({wallKind === "ext" ? "гадна хана" : "дотор хана"})</b> — товшиж булан тавина · <b>давхар товшиж дуусгана</b> · 2 цэг = дан хана · 3+ цэг = өрөө · эхний цэг рүү товшвол битүүлнэ
+                    </p>
+                  )}
+                  {tool === "erase" && (
+                    <p className="mt-2 rounded-lg bg-red-600 px-3 py-2 text-[11px] leading-snug text-white">
+                      🧽 <b>УСТГАХ</b> — устгах элемент дээрээ товшино (өрөө, хана, тавилга). Буруу устгавал ↩ товчоор буцаана.
                     </p>
                   )}
                 </>
