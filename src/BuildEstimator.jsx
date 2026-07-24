@@ -1342,14 +1342,25 @@ export default function BuildEstimator({ onBack, preset }) {
             <div className="space-y-3">
               <div className="flex items-center justify-between gap-2">
                 <h2 className="text-sm font-bold uppercase tracking-wide text-stone-600">Өрөөний жагсаалт</h2>
-                <div className="flex gap-1">
-                  <button onClick={() => setDrawMode((v) => !v)}
-                    className={`rounded-lg px-2.5 py-1.5 text-sm font-medium transition ${drawMode
-                      ? "bg-stone-800 text-white"
-                      : "border border-stone-400 text-stone-700 hover:bg-stone-100"}`}>
-                    ✏️ Хана зурах
-                  </button>
-                  {drawMode && (
+                <div className="flex flex-wrap items-center gap-1">
+                  {/* Багажнууд: зурах / устгах / сонгох */}
+                  <div className="flex overflow-hidden rounded-lg border border-stone-300">
+                    {[
+                      ["draw", "✏️", "Хана зурах"],
+                      ["erase", "🧽", "Устгах — элемент дээр товшино"],
+                      ["select", "🖱", "Сонгох, зөөх"],
+                    ].map(([t, icon, title]) => (
+                      <button key={t} title={title}
+                        onClick={() => { setTool(t); setDrawMode(t === "draw"); }}
+                        className={`px-2.5 py-1.5 text-sm transition ${tool === t
+                          ? (t === "erase" ? "bg-red-600 text-white" : "bg-stone-800 text-white")
+                          : "bg-white text-stone-600 hover:bg-stone-100"}`}>
+                        {icon}
+                      </button>
+                    ))}
+                  </div>
+                  {/* Хананы төрөл — зөвхөн зурах горимд */}
+                  {tool === "draw" && (
                     <div className="flex overflow-hidden rounded-lg border border-stone-300">
                       {[["ext", "Гадна", "Гадна хана — дулаалгатай, зузаан"], ["int", "Дотор", "Дотор хана — таславч"]].map(([k, label, title]) => (
                         <button key={k} onClick={() => setWallKind(k)} title={title}
@@ -1361,9 +1372,18 @@ export default function BuildEstimator({ onBack, preset }) {
                       ))}
                     </div>
                   )}
+                  {/* Буцаах */}
+                  <button onClick={undo} title="Буцаах (сүүлийн үйлдэл)"
+                    className="rounded-lg border border-stone-300 px-2.5 py-1.5 text-sm text-stone-600 hover:bg-stone-100">↩</button>
+                  {/* Бүгдийг цэвэрлэх */}
+                  {(rooms.length > 0 || freeWalls.length > 0 || furniture.length > 0) && (
+                    <button title="Бүгдийг цэвэрлэх"
+                      onClick={() => { if (confirm("Бүх зургийг цэвэрлэх үү?")) { setRooms([]); setFreeWalls([]); setFurniture([]); setSelected(null); } }}
+                      className="rounded-lg border border-red-300 px-2.5 py-1.5 text-sm text-red-600 hover:bg-red-50">🗑</button>
+                  )}
                   <TemplateGallery onApply={(d) => { applyProject(d); setSelected(null); }} />
                   <button onClick={addRect} className="rounded-lg bg-orange-600 px-2.5 py-1.5 text-sm font-medium text-white hover:bg-orange-700">+ Тэгш өнцөгт</button>
-                  <button onClick={addL} className="rounded-lg border border-orange-600 px-2.5 py-1.5 text-sm font-medium text-orange-700 hover:bg-orange-50">+ L-хэлбэр</button>
+                  <button onClick={addL} className="rounded-lg border border-orange-600 px-2.5 py-1.5 text-sm font-medium text-orange-700 hover:bg-orange-50">+ L</button>
                 </div>
               </div>
               <div className="max-h-[300px] space-y-2 overflow-y-auto pr-1">
