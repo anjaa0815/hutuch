@@ -3,6 +3,9 @@ import * as THREE from "three";
 import CloudProjects from "./ProjectStore.jsx";
 import { ExplainButton } from "./BudgetExplain.jsx";
 import TemplateGallery from "./HouseTemplates.jsx";
+import AIPlanGenerator from "./AIPlanGenerator.jsx";
+import { usePro, ProUpgradeModal } from "./ProMembership.jsx";
+import { downloadDXF } from "./dxfExport.js";
 import { FURNITURE, FURNITURE_CATS, FurnitureIcon, PlacedFurniture } from "./FurnitureCatalog.jsx";
 
 /* ============================================================
@@ -864,7 +867,7 @@ function PlanCanvas({ rooms, setRooms, selected, setSelected, drawMode, setDrawM
               {drawMode ? "Товшиж хананы булангуудаа тавиад эхний цэг рүүгээ буцаж битүүлнэ" : "«✏️ Хана зурах» товчийг дарж эхлээрэй"}
             </text>
             <text x={vw / 2} y={vh / 2 + 26} textAnchor="middle" className="fill-stone-400" fontSize="13">
-              эсвэл «🏠 Бэлэн загвар»-аас сонгоно уу
+              эсвэл «✨ AI план» / «🏠 Бэлэн загвар»-аас эхэлнэ үү
             </text>
             <text x={vw / 2} y={vh / 2 + 58} textAnchor="middle" className="fill-stone-300" fontSize="11">
               1 нүд = 1 метр
@@ -1196,6 +1199,8 @@ export default function BuildEstimator({ onBack, preset }) {
   const [tab, setTab] = useState("plan");
   const [drawMode, setDrawMode] = useState(!preset?.rooms);
   const [wallKind, setWallKind] = useState("ext");   // ext=гадна, int=дотор
+  const { isPro } = usePro();
+  const [showPro, setShowPro] = useState(false);
   const [tool, setTool] = useState("draw");          // draw | erase | select
   const [freeWalls, setFreeWalls] = useState([]);    // өрөө биш, дан хана
   const [furniture, setFurniture] = useState([]);
@@ -1451,9 +1456,19 @@ export default function BuildEstimator({ onBack, preset }) {
                       ))}
                     </div>
                   )}
+                  <AIPlanGenerator
+                    locked={!isPro} onLocked={() => setShowPro(true)}
+                    onApply={(d) => { applyProject(d); setSelected(null); setDrawMode(false); setTool("select"); }} />
                   <TemplateGallery onApply={(d) => { applyProject(d); setSelected(null); }} />
                   <button onClick={addRect} className="rounded-lg bg-orange-600 px-2.5 py-1.5 text-sm font-medium text-white hover:bg-orange-700">+ Тэгш өнцөгт</button>
                   <button onClick={addL} className="rounded-lg border border-orange-600 px-2.5 py-1.5 text-sm font-medium text-orange-700 hover:bg-orange-50">+ L</button>
+                  {(rooms.length > 0 || freeWalls.length > 0) && (
+                    <button title="DXF (AutoCAD) файлаар татах — инженерт өгөх"
+                      onClick={() => { if (!isPro) { setShowPro(true); return; } downloadDXF(rooms, freeWalls, furniture, "hutuch-plan"); }}
+                      className="rounded-lg border border-stone-400 px-2.5 py-1.5 text-sm font-medium text-stone-700 hover:bg-stone-100">
+                      📐 DXF{!isPro && " 🔒"}
+                    </button>
+                  )}
                 </div>
               </div>
               <div className="max-h-[300px] space-y-2 overflow-y-auto pr-1">
@@ -1849,6 +1864,8 @@ export default function BuildEstimator({ onBack, preset }) {
           </div>
         )}
       </main>
+      {showPro && <ProUpgradeModal onClose={() => setShowPro(false)}
+        reason="AI план зурах, DXF (CAD) татах нь Pro гишүүдэд нээлттэй." />}
     </div>
   );
 }

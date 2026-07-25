@@ -5,6 +5,8 @@ import EngineeringTools from './EngineeringTools.jsx';
 import AdviceChat from './AdviceChat.jsx';
 import { signInAnonymously } from 'firebase/auth';
 import { app, auth, db, track } from './firebase.js';
+import { AIPlanInline } from './AIPlanGenerator.jsx';
+import { usePro, ProUpgradeModal } from './ProMembership.jsx';
 import { AuthButton } from './AuthPanel.jsx';
 import { 
   Calculator, BrickWall, PaintBucket, Ruler, Info, 
@@ -1675,7 +1677,20 @@ const Estimator = ({ onBack }) => {
 };
 
 // --- HOME SCREEN ---
-const HomeView = ({ onNavigate, onSelectCategory, onStartTemplate }) => (
+/* Нүүр хуудасны AI план блок — Pro хэрэглэгчид ажиллана */
+const HomeAIBlock = ({ onAIPlan }) => {
+    const { isPro } = usePro();
+    const [showPro, setShowPro] = useState(false);
+    return (
+        <div className="mx-4 sm:mx-0 mb-12">
+            <AIPlanInline onApply={onAIPlan} locked={!isPro} onLocked={() => setShowPro(true)} />
+            {showPro && <ProUpgradeModal onClose={() => setShowPro(false)}
+                reason="AI-аар план зурах нь Pro гишүүдэд нээлттэй." />}
+        </div>
+    );
+};
+
+const HomeView = ({ onNavigate, onSelectCategory, onStartTemplate, onAIPlan }) => (
     <div className="animate-in fade-in py-8">
         <div className="bg-slate-900 text-white rounded-[2.5rem] p-8 mb-12 shadow-2xl relative overflow-hidden mx-4 sm:mx-0">
             <div className="relative z-10 max-w-lg">
@@ -1732,7 +1747,9 @@ const HomeView = ({ onNavigate, onSelectCategory, onStartTemplate }) => (
                 </div>
             </div>
         </div>
-        
+
+        <HomeAIBlock onAIPlan={onAIPlan} />
+
         <div className="px-2 mb-10">
             <div className="flex justify-between items-center mb-4 px-2">
                 <h2 className="text-lg font-bold text-slate-900 dark:text-white">Түгээмэл</h2>
@@ -1843,6 +1860,12 @@ export default function App() {
         setView('builder'); 
     };
 
+    const handleAIPlan = (project) => {
+        setEstimatorPreset(project);
+        setView('estimator');
+        window.scrollTo(0, 0);
+    };
+
     const handleNav = (target) => {
         setView(target);
         window.scrollTo(0, 0);
@@ -1873,7 +1896,7 @@ export default function App() {
                     ) : (
                         // USER VIEWS
                         <>
-                            {view === 'home' && <HomeView onNavigate={handleNav} onSelectCategory={(id) => { setSelectedCat(id); setView('category'); }} onStartTemplate={handleStartTemplate} />}
+                            {view === 'home' && <HomeView onNavigate={handleNav} onSelectCategory={(id) => { setSelectedCat(id); setView('category'); }} onStartTemplate={handleStartTemplate} onAIPlan={handleAIPlan} />}
                             {view === 'builder' && <QuickPlanner onBack={() => setView('home')} template={initialTemplate} onAdvanced={(p) => { setEstimatorPreset(p); setView('estimator'); }} />}
                             {view === 'advice' && <div><div className="pt-6"><AdviceChat /></div><AdviceForumView onBack={() => setView('home')} /></div>}
                             {view === 'rfq' && <RFQManager rfqs={rfqs} onBack={() => setView('home')} />}
