@@ -5,7 +5,7 @@ import { ExplainButton } from "./BudgetExplain.jsx";
 import TemplateGallery from "./HouseTemplates.jsx";
 import AIPlanGenerator from "./AIPlanGenerator.jsx";
 import { usePro, ProUpgradeModal } from "./ProMembership.jsx";
-import { downloadDXF } from "./dxfExport.js";
+import { downloadDXF } from "./dxfExport.jsx";
 import { FURNITURE, FURNITURE_CATS, FurnitureIcon, PlacedFurniture } from "./FurnitureCatalog.jsx";
 
 /* ============================================================
