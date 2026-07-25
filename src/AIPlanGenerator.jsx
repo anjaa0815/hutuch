@@ -34,7 +34,7 @@ async function askProgram(text) {
   } catch { /* зочноор */ }
   const r = await fetch(API, {
     method: "POST", headers,
-    body: JSON.stringify({ messages: [{ role: "user", content: `${SYS}\n\nХэрэглэгч: ${text}` }] }),
+    body: JSON.stringify({ mode: "plan", messages: [{ role: "user", content: `${SYS}\n\nХэрэглэгч: ${text}` }] }),
   });
   const data = await r.json().catch(() => ({}));
   if (r.status === 429) throw new Error("Өдрийн лимит дууслаа — маргааш эсвэл Pro-гоор үргэлжлүүлнэ үү.");
