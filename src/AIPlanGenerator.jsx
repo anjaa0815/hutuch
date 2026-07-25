@@ -48,90 +48,318 @@ async function askProgram(text) {
   return prog;
 }
 
-/* ---------- 2. Зохион байгуулалт: slice-and-dice (давхцалгүй) ---------- */
+/* ---------- 2. Зохион байгуулалт: "нуруутай" схем ----------
+   Төв өрөө (коридор/зочны) нь бүх өрөөтэй хиллэдэг зурвас болно →
+   өрөө бүр төвөөс ШУУД нэвтэрнэ, унтлагаар дамжин өнгөрөхгүй.
+   Жижиг өрөөг хосоор нь давхарлана (жишээ: агуулах угаалгын ард).
+   ------------------------------------------------------------- */
+
+const MIN_W = 1.8;   // баганын хамгийн бага өргөн (м)
+/* Төвд хэр ойр байх шаардлагатай вэ — бага нь ойр */
+const HUB_NEED = { bath: 0, bed: 1, kitchen: 2, work: 3, hall: 3, living: 4, storage: 6, garage: 7 };
+const hubNeed = (t) => HUB_NEED[t] ?? 4;
+
 export function layoutRooms(program) {
   const rooms = program.rooms
     .map((r) => ({ ...r, area: Math.max(3, Number(r.area) || 8) }))
     .sort((a, b) => b.area - a.area);
   const total = rooms.reduce((a, r) => a + r.area, 0);
-  // Барилгын гадна хэмжээ — 1.25 харьцаатай тэгш өнцөгт
-  const W = snap(Math.sqrt(total * 1.25), 0.25);
+  let W = snap(Math.sqrt(total * 1.25), 0.25);
   const L = snap(total / W, 0.25);
 
-  const out = [];
-  /* Тэгш өнцөгтийг талбайн харьцаагаар рекурсив хуваана */
-  const split = (list, x, y, w, l) => {
-    if (!list.length) return;
-    if (list.length === 1) {
-      out.push({ ...list[0], x, y, w, l });
-      return;
-    }
-    const sum = list.reduce((a, r) => a + r.area, 0);
-    // Хагасыг нь эхний бүлэгт — талбайгаар тэнцүүлж
-    let acc = 0, cut = 1;
-    for (let i = 0; i < list.length; i++) {
-      acc += list[i].area;
-      if (acc >= sum / 2) { cut = i + 1; break; }
-    }
-    cut = Math.min(Math.max(cut, 1), list.length - 1);
-    const aSum = list.slice(0, cut).reduce((a, r) => a + r.area, 0);
-    const frac = aSum / sum;
-    if (w >= l) {
-      const wa = snap(w * frac, 0.25);
-      split(list.slice(0, cut), x, y, wa, l);
-      split(list.slice(cut), x + wa, y, w - wa, l);
-    } else {
-      const la = snap(l * frac, 0.25);
-      split(list.slice(0, cut), x, y, w, la);
-      split(list.slice(cut), x, y + la, w, l - la);
-    }
-  };
-  split(rooms, 0, 0, W, L);
+  /* Хоёроос цөөн өрөө бол энгийн хуваалт */
+  if (rooms.length <= 2) {
+    const out = [];
+    let y = 0;
+    rooms.forEach((r) => {
+      const h = snap(r.area / W, 0.25);
+      out.push({ ...r, x: 0, y, w: W, l: h });
+      y += h;
+    });
+    return { W, L, boxes: out };
+  }
 
-  /* Хэт нарийн өрөөг засах — 1.5м-ээс нарийн бол алгасна */
-  return { W, L, boxes: out.filter((b) => b.w >= 1.2 && b.l >= 1.2) };
+  /* --- Төв өрөө: коридор → зочны → хамгийн том --- */
+  let hi = rooms.findIndex((r) => r.type === "hall");
+  if (hi < 0) hi = rooms.findIndex((r) => r.type === "living");
+  if (hi < 0) hi = 0;
+  const hub = rooms[hi];
+  const others = rooms.filter((_, i) => i !== hi);
+
+  /* --- Өрөөнүүдийг дээд/доод бүлэгт талбайгаар тэнцүүлж хуваана --- */
+  const top = [], bot = [];
+  let tA = 0, bA = 0;
+  others.forEach((r) => { if (tA <= bA) { top.push(r); tA += r.area; } else { bot.push(r); bA += r.area; } });
+
+  /* Зурвас бүрийн өндөр — хэт нарийн болгохгүй. Хэрэв нийт талбай зорилтоос
+     хазайвал өргөнийг (W) тохируулж 3 удаа давтана. */
+  const MIN_BAND = 2.2;
+  const isHall = hub.type === "hall";
+  const bands = (w) => {
+    /* Коридор бол нарийхан (1.2-2.0м), эс бөгөөс талбайгаараа */
+    const h = isHall
+      ? Math.min(Math.max(snap(hub.area / w, 0.25), 1.2), 2.0)
+      : Math.min(Math.max(snap(hub.area / w, 0.25), 2.2), 4.5);
+    const t = top.length ? Math.max(MIN_BAND, snap(tA / w, 0.25)) : 0;
+    const b = bot.length ? Math.max(MIN_BAND, snap(bA / w, 0.25)) : 0;
+    return { hubH: h, topH: t, botH: b, Ltot: snap(h + t + b, 0.25) };
+  };
+  let bd = bands(W);
+  for (let k = 0; k < 3; k++) {
+    /* Барилга хэт "вагон" болохоос сэргийлж өргөнийг хязгаарлана */
+    const wMin = Math.sqrt(total * 0.6), wMax = Math.sqrt(total * 2.2);
+    const w2 = snap(Math.min(Math.max(total / bd.Ltot, wMin), wMax), 0.25);
+    const nb = bands(w2);
+    if (Math.abs(w2 * nb.Ltot - total) < Math.abs(W * bd.Ltot - total)) { W = w2; bd = nb; }
+    else break;
+  }
+  const { hubH, topH, botH, Ltot } = bd;
+
+  /* --- Нэг бүлгийг багана болгож байрлуулна --- */
+  const layoutBand = (list, y0, h, hubBelow) => {
+    if (!list.length || h <= 0) return [];
+    /* Нарийн багануудыг хосоор нэгтгэнэ */
+    let cols = list.map((r) => ({ rooms: [r], area: r.area }));
+    let guard = 0;
+    while (guard++ < 20) {
+      const sumA = cols.reduce((a, c) => a + c.area, 0);
+      const narrow = cols.findIndex((c) => (c.area / sumA) * W < MIN_W);
+      if (narrow < 0 || cols.length < 2) break;
+      /* Хамгийн жижиг хөрштэй нь нэгтгэх */
+      const other = cols
+        .map((c, i) => ({ c, i }))
+        .filter((x) => x.i !== narrow && x.c.rooms.length < 2)
+        .sort((a, b) => a.c.area - b.c.area)[0];
+      if (!other) break;
+      const merged = { rooms: [...cols[narrow].rooms, ...other.c.rooms], area: cols[narrow].area + other.c.area };
+      cols = cols.filter((_, i) => i !== narrow && i !== other.i);
+      cols.push(merged);
+    }
+    const sumA = cols.reduce((a, c) => a + c.area, 0);
+    const out = [];
+    let x = 0;
+    cols.forEach((c, ci) => {
+      const w = ci === cols.length - 1 ? W - x : snap((c.area / sumA) * W, 0.25);
+      if (c.rooms.length === 1) {
+        out.push({ ...c.rooms[0], x, y: y0, w, l: h });
+      } else {
+        /* Давхарласан хос: төвд ойр байх шаардлагатай нь төв рүүгээ */
+        const sorted = [...c.rooms].sort((a, b) => hubNeed(a.type) - hubNeed(b.type));
+        const [near, far] = sorted;
+        const nearH = snap(h * (near.area / (near.area + far.area)), 0.25);
+        const farH = h - nearH;
+        if (hubBelow) {
+          out.push({ ...far, x, y: y0, w, l: farH });
+          out.push({ ...near, x, y: y0 + farH, w, l: nearH });
+        } else {
+          out.push({ ...near, x, y: y0, w, l: nearH });
+          out.push({ ...far, x, y: y0 + nearH, w, l: farH });
+        }
+      }
+      x += w;
+    });
+    return out;
+  };
+
+  const boxes = [
+    ...layoutBand(top, 0, topH, true),                  // дээд бүлэг — нуруу доор нь
+    { ...hub, x: 0, y: topH, w: W, l: hubH },           // нуруу (төв өрөө)
+    ...layoutBand(bot, topH + hubH, botH, false),       // доод бүлэг — нуруу дээр нь
+  ];
+
+  return { W, L: Ltot, boxes: boxes.filter((b) => b.w >= 1.0 && b.l >= 1.0) };
 }
 
-/* ---------- 3. Хаалга, цонх автоматаар ---------- */
+/* ---------- 3. Хаалга, цонх — хөл хөдөлгөөний зохион байгуулалттай ----------
+   Зарчим:
+   1) Хоёр өрөөний хана нийтлэг хэсэгтэй бол хаалга тавьж болно (≥0.9м)
+   2) Төв өрөө (коридор → зочны → хамгийн том) сонгоно
+   3) Төвөөс эхлээд БҮХ өрөө рүү мод (spanning tree) байгуулна —
+      унтлага, угаалгаар дамжин өнгөрөхөөс зайлсхийж жинлэнэ
+   4) Орох хаалга төв өрөөний гадна хананд, гаражид өөрийн хаалга
+   -------------------------------------------------------------- */
+
+const MIN_DOOR = 0.9;      // хаалга багтах хамгийн бага нийтлэг урт
+const EPS = 0.02;
+
+/* Өрөөний ирмэг: 0=дээд, 1=баруун, 2=доод, 3=зүүн */
+function edgeOf(box, side) { return { 0: 0, 1: 1, 2: 2, 3: 3 }[side]; }
+
+/* Хоёр тэгш өнцөгтийн нийтлэг ханыг олно */
+function sharedWall(a, b) {
+  // a-ийн баруун тал = b-ийн зүүн тал
+  if (Math.abs(a.x + a.w - b.x) < EPS) {
+    const lo = Math.max(a.y, b.y), hi = Math.min(a.y + a.l, b.y + b.l);
+    if (hi - lo >= MIN_DOOR) return { axis: "v", aEdge: 1, bEdge: 3, lo, hi, pos: a.x + a.w };
+  }
+  // a-ийн зүүн тал = b-ийн баруун тал
+  if (Math.abs(a.x - (b.x + b.w)) < EPS) {
+    const lo = Math.max(a.y, b.y), hi = Math.min(a.y + a.l, b.y + b.l);
+    if (hi - lo >= MIN_DOOR) return { axis: "v", aEdge: 3, bEdge: 1, lo, hi, pos: a.x };
+  }
+  // a-ийн доод тал = b-ийн дээд тал
+  if (Math.abs(a.y + a.l - b.y) < EPS) {
+    const lo = Math.max(a.x, b.x), hi = Math.min(a.x + a.w, b.x + b.w);
+    if (hi - lo >= MIN_DOOR) return { axis: "h", aEdge: 2, bEdge: 0, lo, hi, pos: a.y + a.l };
+  }
+  // a-ийн дээд тал = b-ийн доод тал
+  if (Math.abs(a.y - (b.y + b.l)) < EPS) {
+    const lo = Math.max(a.x, b.x), hi = Math.min(a.x + a.w, b.x + b.w);
+    if (hi - lo >= MIN_DOOR) return { axis: "h", aEdge: 0, bEdge: 2, lo, hi, pos: a.y };
+  }
+  return null;
+}
+
+/* Дамжин өнгөрөхөд тохиромжтой байдал — бага нь дээр */
+const PASS_COST = { hall: 0, living: 1, kitchen: 3, work: 4, storage: 5, garage: 7, bed: 9, bath: 12 };
+const passCost = (t) => PASS_COST[t] ?? 5;
+
+/* Ирмэг дээрх байрлалыг t (0..1) болгож хөрвүүлэх */
+function tOnEdge(box, edge, coord) {
+  switch (edge) {
+    case 0: return (coord - box.x) / box.w;              // дээд: зүүнээс баруун
+    case 1: return (coord - box.y) / box.l;              // баруун: дээрээс доош
+    case 2: return (box.x + box.w - coord) / box.w;      // доод: баруунаас зүүн
+    case 3: return (box.y + box.l - coord) / box.l;      // зүүн: доороос дээш
+    default: return 0.5;
+  }
+}
+
 function buildRooms(layout) {
   const { W, L, boxes } = layout;
-  const eps = 0.01;
-  return boxes.map((b, i) => {
-    const points = [
+  const n = boxes.length;
+  const openings = boxes.map(() => []);
+  const hasDoor = boxes.map(() => false);   // нийтлэг хана дээрх хаалга 2 өрөөнд хоёуланд нь тооцогдоно
+
+  /* --- Зэргэлдээ байдлын граф --- */
+  const adj = [];
+  for (let i = 0; i < n; i++) {
+    for (let j = i + 1; j < n; j++) {
+      const sw = sharedWall(boxes[i], boxes[j]);
+      if (sw) adj.push({ i, j, sw });
+    }
+  }
+
+  /* --- Төв өрөө сонгох: коридор → зочны → хамгийн том --- */
+  const byType = (t) => boxes.findIndex((b) => b.type === t);
+  let hub = byType("hall");
+  if (hub < 0) hub = byType("living");
+  if (hub < 0) hub = boxes.reduce((best, b, i) => (b.w * b.l > boxes[best].w * boxes[best].l ? i : best), 0);
+
+  /* --- Dijkstra: төвөөс өрөө бүр рүү хамгийн бага "хувийн өрөөгөөр дамжих"
+         зардалтай зам. Ингэснээр унтлага, угаалгаар дамжин өнгөрөхөөс зайлсхийнэ. --- */
+  const INF = Infinity;
+  const dist = boxes.map(() => INF);
+  const via = boxes.map(() => null);       // тухайн өрөө рүү ирсэн ирмэг
+  dist[hub] = 0;
+  const done = new Set();
+  while (done.size < n) {
+    let u = -1;
+    for (let i = 0; i < n; i++) if (!done.has(i) && dist[i] < INF && (u < 0 || dist[i] < dist[u])) u = i;
+    if (u < 0) break;                       // үлдсэн өрөөнүүд холбогдох боломжгүй
+    done.add(u);
+    adj.forEach((e) => {
+      const v = e.i === u ? e.j : (e.j === u ? e.i : -1);
+      if (v < 0 || done.has(v)) return;
+      /* u-гаар дамжих зардал: u хэр "хувийн" вэ + өргөн хаалга бага зэрэг урамшуулна */
+      const step = passCost(boxes[u].type) - (e.sw.hi - e.sw.lo) * 0.05;
+      if (dist[u] + step < dist[v]) { dist[v] = dist[u] + step; via[v] = e; }
+    });
+  }
+  const treeEdges = via.filter(Boolean);
+
+  /* --- Дотор хаалгуудыг нийтлэг ханын ГОЛД тавина --- */
+  treeEdges.forEach((e) => {
+    const { sw } = e;
+    const w = Math.min(0.9, (sw.hi - sw.lo) * 0.8);
+    const mid = (sw.lo + sw.hi) / 2;
+    const a = boxes[e.i], b = boxes[e.j];
+    openings[e.i].push({
+      id: uid(), type: "door", edge: sw.aEdge,
+      t: Math.min(0.9, Math.max(0.1, tOnEdge(a, sw.aEdge, mid))),
+      w, h: 2.1, to: e.j,
+    });
+    hasDoor[e.i] = true; hasDoor[e.j] = true;
+  });
+
+  /* --- Гадна ирмэгүүд --- */
+  const outerEdges = (b) => {
+    const list = [];
+    if (Math.abs(b.y) < EPS) list.push({ edge: 0, len: b.w, mid: b.x + b.w / 2 });
+    if (Math.abs(b.x + b.w - W) < EPS) list.push({ edge: 1, len: b.l, mid: b.y + b.l / 2 });
+    if (Math.abs(b.y + b.l - L) < EPS) list.push({ edge: 2, len: b.w, mid: b.x + b.w / 2 });
+    if (Math.abs(b.x) < EPS) list.push({ edge: 3, len: b.l, mid: b.y + b.l / 2 });
+    return list.sort((p, q) => q.len - p.len);
+  };
+
+  /* --- Орох хаалга: төв өрөөний хамгийн урт гадна хананд --- */
+  const hubOuter = outerEdges(boxes[hub]);
+  let entryEdge = null;
+  if (hubOuter.length) {
+    entryEdge = hubOuter[0];
+    openings[hub].push({
+      id: uid(), type: "door", edge: entryEdge.edge, t: 0.5,
+      w: Math.min(1.0, entryEdge.len * 0.7), h: 2.1, entry: true,
+    });
+    hasDoor[hub] = true;
+  } else {
+    /* Төв нь гадна хананд хүрэхгүй бол гадна хананд хүрдэг хамгийн ойрын өрөөнд */
+    const alt = boxes.findIndex((b) => outerEdges(b).length > 0);
+    if (alt >= 0) {
+      const oe = outerEdges(boxes[alt])[0];
+      openings[alt].push({ id: uid(), type: "door", edge: oe.edge, t: 0.5, w: Math.min(1.0, oe.len * 0.7), h: 2.1, entry: true });
+      hasDoor[alt] = true;
+    }
+  }
+
+  /* --- Гараж: өөрийн гадна хаалгатай --- */
+  boxes.forEach((b, i) => {
+    if (b.type !== "garage") return;
+    const oe = outerEdges(b);
+    if (!oe.length) return;
+    openings[i].push({
+      id: uid(), type: "door", edge: oe[0].edge, t: 0.5,
+      w: Math.min(2.6, oe[0].len * 0.8), h: 2.2, entry: true,
+    });
+    hasDoor[i] = true;
+  });
+
+  /* --- Холбогдож чадаагүй өрөө: гадна хаалга өгнө --- */
+  boxes.forEach((b, i) => {
+    if (hasDoor[i]) return;
+    const oe = outerEdges(b);
+    if (oe.length) {
+      openings[i].push({ id: uid(), type: "door", edge: oe[0].edge, t: 0.5, w: 0.9, h: 2.1, entry: true });
+      hasDoor[i] = true;
+    }
+  });
+
+  /* --- Цонх: гадна хананд, хаалгатай мөргөлдөхгүй --- */
+  boxes.forEach((b, i) => {
+    if (["bath", "storage", "garage"].includes(b.type)) return;
+    const oe = outerEdges(b).filter((e) => e.len > 1.4);
+    if (!oe.length) return;
+    /* Тухайн ирмэг дээр хаалга байвал t-г зөрүүлнэ */
+    const target = oe[0];
+    const doorSame = openings[i].find((o) => o.type === "door" && o.edge === target.edge);
+    openings[i].push({
+      id: uid(), type: "win", edge: target.edge,
+      t: doorSame ? 0.78 : 0.5,
+      w: Math.min(1.5, target.len * (doorSame ? 0.3 : 0.5)), h: 1.4,
+    });
+  });
+
+  /* --- Эцсийн өрөөнүүд --- */
+  return boxes.map((b, i) => ({
+    id: "r" + Date.now() + i,
+    name: b.name || `Өрөө ${i + 1}`,
+    points: [
       { x: b.x, y: b.y }, { x: b.x + b.w, y: b.y },
       { x: b.x + b.w, y: b.y + b.l }, { x: b.x, y: b.y + b.l },
-    ];
-    /* Ирмэг бүр гадна талд эсэхийг тодорхойлно */
-    const edges = points.map((p, j) => {
-      const q = points[(j + 1) % 4];
-      const mx = (p.x + q.x) / 2, my = (p.y + q.y) / 2;
-      const outer = Math.abs(mx) < eps || Math.abs(mx - W) < eps
-        || Math.abs(my) < eps || Math.abs(my - L) < eps;
-      return { j, len: Math.hypot(q.x - p.x, q.y - p.y), outer };
-    });
-    const openings = [];
-    // Цонх — хамгийн урт ГАДНА ирмэг дээр (угаалга, агуулах, коридороос бусад)
-    const outers = edges.filter((e) => e.outer && e.len > 1.4).sort((a, b) => b.len - a.len);
-    if (outers.length && !["bath", "storage", "hall"].includes(b.type)) {
-      openings.push({ id: uid(), type: "win", edge: outers[0].j, t: 0.5, w: Math.min(1.5, outers[0].len * 0.5), h: 1.4 });
-    }
-    // Хаалга — дотор ирмэг дээр, байхгүй бол гадна (орох хаалга)
-    const inners = edges.filter((e) => !e.outer && e.len > 1.0).sort((a, b) => b.len - a.len);
-    const doorEdge = inners[0] || outers[0] || edges[0];
-    const isEntry = b.type === "garage" || (!inners.length && b.type === "hall");
-    openings.push({
-      id: uid(), type: "door", edge: doorEdge.j, t: 0.5,
-      w: b.type === "garage" ? Math.min(2.6, doorEdge.len * 0.8) : (isEntry ? 1.0 : 0.9),
-      h: b.type === "garage" ? 2.2 : 2.1,
-    });
-    return {
-      id: "r" + Date.now() + i,
-      name: b.name || `Өрөө ${i + 1}`,
-      points,
-      openings,
-      wallKind: "ext",
-    };
-  });
+    ],
+    openings: openings[i],
+    wallKind: "ext",
+  }));
 }
 
 export function programToProject(program) {
@@ -142,6 +370,9 @@ export function programToProject(program) {
     _meta: { W: layout.W, L: layout.L },
   };
 }
+
+/* Тест, шалгалтад ашиглана */
+export const _internals = { sharedWall, buildRooms, MIN_DOOR };
 
 /* ---------- Жижиг урьдчилсан харагдац ---------- */
 function Preview({ rooms }) {
