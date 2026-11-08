@@ -7,6 +7,7 @@ import AIPlanGenerator from "./AIPlanGenerator.jsx";
 import { usePro, ProUpgradeModal } from "./ProMembership.jsx";
 import { downloadDXF } from "./dxfExport.jsx";
 import MaterialBenchmark from "./miBenchmark.jsx";
+import { useLivePrices } from "./priceStore.js";
 import { FURNITURE, FURNITURE_CATS, FurnitureIcon, PlacedFurniture } from "./FurnitureCatalog.jsx";
 
 /* ============================================================
@@ -1232,6 +1233,20 @@ export default function BuildEstimator({ onBack, preset }) {
   const [selections, setSelections] = useState(preset?.selections ? { ...DEFAULT_SELECTIONS, ...preset.selections } : DEFAULT_SELECTIONS);
   const [norms, setNorms] = useState(DEFAULT_NORMS);
   const [prices, setPrices] = useState(DEFAULT_PRICES);
+  /* Firestore-ийн төвлөрсөн үнэ (config/prices). Хэрэглэгч гараар засаагүй, төслөөс ачаалаагүй
+     үнийг л шинэчилнэ — өмнөх суурь үнэтэйгээ тэнцүү хэвээр байгаа мөрийг "хөндөгдөөгүй" гэж үзнэ. */
+  const livePrices = useLivePrices(DEFAULT_PRICES);
+  const priceBaseRef = useRef(DEFAULT_PRICES);
+  useEffect(() => {
+    const prevBase = priceBaseRef.current, nextBase = livePrices.base;
+    if (prevBase === nextBase) return;
+    setPrices((p) => {
+      const n = { ...p };
+      for (const k of Object.keys(nextBase)) if (p[k] === prevBase[k]) n[k] = nextBase[k];
+      return n;
+    });
+    priceBaseRef.current = nextBase;
+  }, [livePrices.base]);
   const [laborNorms, setLaborNorms] = useState(DEFAULT_LABOR);
   const [mep, setMep] = useState(preset?.mep ? { ...DEFAULT_MEP, ...preset.mep } : DEFAULT_MEP);
   const [quote, setQuote] = useState({
@@ -1805,6 +1820,14 @@ export default function BuildEstimator({ onBack, preset }) {
 
         {tab === "settings" && (
           <div className="space-y-4">
+            {/* Үнийн эх сурвалж — Firestore config/prices */}
+            <div className={`flex flex-wrap items-center gap-2 rounded-lg border px-3 py-2 text-xs ${livePrices.source === "default" ? "border-stone-200 bg-stone-50 text-stone-500" : "border-emerald-200 bg-emerald-50 text-emerald-800"}`}>
+              <span className="font-bold">{livePrices.source === "default" ? "💾 Анхдагч жишиг үнэ" : "🔄 Зах зээлийн шинэчилсэн үнэ"}</span>
+              {livePrices.source !== "default" && (
+                <span>{Object.keys(livePrices.live).length} материалын үнэ шинэчлэгдсэн{livePrices.updatedAt ? ` · ${livePrices.updatedAt}` : ""}</span>
+              )}
+              <span className="text-stone-400">Гараар өөрчилсөн үнэ тань хадгалагдана.</span>
+            </div>
             <div className="rounded-xl border border-stone-200 bg-white p-4 shadow-sm">
               <h3 className="mb-3 text-sm font-bold uppercase tracking-wide text-stone-600">Байгууламжийн параметр</h3>
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -1836,7 +1859,7 @@ export default function BuildEstimator({ onBack, preset }) {
                           <td className="w-32 px-4 py-1"><NumInput value={norms[d.key]} step={0.01} onChange={(v) => setNorms((n) => ({ ...n, [d.key]: v }))} /></td>
                           <td className="w-32 px-4 py-1"><NumInput value={laborNorms[d.key]} step={0.01} onChange={(v) => setLaborNorms((l) => ({ ...l, [d.key]: v }))} /></td>
                           <td className="w-28 px-4 py-2"><span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${d.cat === "C" ? "bg-purple-100 text-purple-700" : d.cat === "A" ? "bg-stone-200 text-stone-600" : "bg-blue-100 text-blue-700"}`}>{RATE_CATS[d.cat] || RATE_CATS.B}</span></td>
-                          <td className="w-36 px-4 py-1"><NumInput value={prices[d.key]} step={100} onChange={(v) => setPrices((p) => ({ ...p, [d.key]: v }))} /></td>
+                          <td className="w-36 px-4 py-1" title={`key: ${d.key}`}><NumInput value={prices[d.key]} step={100} onChange={(v) => setPrices((p) => ({ ...p, [d.key]: v }))} /></td>
                         </tr>
                       ))}
                     </tbody>
@@ -1855,7 +1878,7 @@ export default function BuildEstimator({ onBack, preset }) {
                       <td className="w-32 px-4 py-1"><NumInput value={norms[d.key]} step={0.01} onChange={(v) => setNorms((n) => ({ ...n, [d.key]: v }))} /></td>
                       <td className="w-32 px-4 py-1"><NumInput value={laborNorms[d.key]} step={0.01} onChange={(v) => setLaborNorms((l) => ({ ...l, [d.key]: v }))} /></td>
                       <td className="w-28 px-4 py-2"><span className="rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-medium text-blue-700">{RATE_CATS[d.cat] || RATE_CATS.B}</span></td>
-                      <td className="w-36 px-4 py-1"><NumInput value={prices[d.key]} step={100} onChange={(v) => setPrices((p) => ({ ...p, [d.key]: v }))} /></td>
+                      <td className="w-36 px-4 py-1" title={`key: ${d.key}`}><NumInput value={prices[d.key]} step={100} onChange={(v) => setPrices((p) => ({ ...p, [d.key]: v }))} /></td>
                     </tr>
                   ))}
                 </tbody>

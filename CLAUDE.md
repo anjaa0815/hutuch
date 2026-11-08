@@ -37,6 +37,7 @@
 | `AuthPanel.jsx` | Нэвтрэх, бүртгүүлэх |
 | `dxfExport.jsx` | Планыг DXF (AutoCAD R12, мм) болгож экспортлох (Pro) |
 | `miBenchmark.jsx` | RASMI материалын эрчимшлийн жишиг (кг/м²) — төсвийн мөрийг масс руу хөрвүүлж харьцуулна ("Төсөв" таб) |
+| `priceStore.js` | `useLivePrices()` — Firestore `config/prices`-оос төвлөрсөн үнэ ачаална (BuildEstimator, QuickPlanner) |
 
 Import-ын бүтэц: `App.jsx` → BuildEstimator, QuickPlanner, EngineeringTools, AdviceChat,
 AIPlanGenerator (`AIPlanInline`), ProMembership, AuthPanel, firebase.js.
@@ -55,6 +56,16 @@ ProMembership, dxfExport, FurnitureCatalog.
 - Хугацаа автоматаар дуусдаггүй (хожим `expiresAt` нэмж болно)
 - Pro боломжууд: хязгааргүй AI, cloud төсөл, төсвийн AI тайлбар, DXF экспорт, AI план үүсгэгч
 - Үнэ: 30,000₮/сар, 300,000₮/жил (`ProMembership.jsx`-д `PRO_PRICE`)
+
+## Зах зээлийн үнэ шинэчлэх (код засахгүй)
+
+- Firestore Console → `config` коллекц → `prices` баримт → талбар нэмэх:
+  нэр = материалын key (жишээ `fl_screed1`), төрөл number, утга = ₮
+- `updatedAt` талбар (timestamp эсвэл `"2026-11-08"` string) — "Норм & Үнэ" таб дээр огноо харагдана
+- Зөвхөн өөрчилсөн үнээ бичнэ — бусад нь `BuildEstimator.jsx`-ийн анхдагч `price:` хэвээр
+- Key-г олох: "Норм & Үнэ" таб дээр үнийн нүдэнд хулгана аваачихад `key: ...` гарна
+- Хэрэглэгчийн гараар засварласан, эсвэл төслөөс ачаалсан үнийг дарахгүй. Хэрэглэгчид хуудас дахин ачаалахад шинэ үнэ авна
+- Firestore дүрэм: `match /config/prices { allow read: if true; allow write: if false; }`
 
 ## AI backend (тусдаа репо)
 
@@ -85,7 +96,9 @@ git push
 ```
 
 Firestore дүрэм: `firebase deploy --only firestore` нь Windows дээр colon алдаа өгдөг →
-Firebase Console → Firestore → Rules → агуулгыг хуулж тавиад **Publish**.
+Firebase Console → Firestore → Rules → шинэ match блокийг **нэмж** **Publish**.
+⚠️ Репо дахь `firestore.rules` нь Console-оос хоцорсон (proStatus, aiUsage зөрнө) — бүхэлд нь хуулж
+тавибал Pro болон AI лимит эвдэрнэ. Console-ын дүрмийг репо руу синк хийх хүртэл зөвхөн блок нэмнэ.
 
 ---
 

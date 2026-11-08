@@ -1,6 +1,13 @@
 rules_version = '2';
+// ⚠️ Энэ файл Firebase Console дээрх бодит дүрмээс ХОЦОРСОН (proStatus, aiUsage-ийн дүрэм зөрнө).
+// Бүхэлд нь хуулж Publish хийвэл Pro болон AI лимит эвдэрнэ — зөвхөн шинэ match блокийг Console-д нэмнэ.
 service cloud.firestore {
   match /databases/{database}/documents {
+    // Төвлөрсөн зах зээлийн үнэ — бүгд уншина, зөвхөн админ Console-оос засна (src/priceStore.js)
+    match /config/prices {
+      allow read: if true;
+      allow write: if false;
+    }
     // Хэрэглэгч зөвхөн өөрийн төслүүдэд ханддаг
     match /users/{uid}/projects/{projectId} {
       allow read, write, delete: if request.auth != null && request.auth.uid == uid;

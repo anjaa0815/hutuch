@@ -5,6 +5,7 @@ import {
   DEFAULT_SETTINGS, DEFAULT_SELECTIONS, DEFAULT_MEP,
   computeGeometry, rateOf, rect, fmt, fmtT,
 } from "./BuildEstimator.jsx";
+import { useLivePrices } from "./priceStore.js";
 
 /* ============================================================
    ХӨТӨЧ — Хурдан Төлөвлөгч (Quick Planner)
@@ -47,6 +48,8 @@ function buildProject(dims, floors, winCount, doorCount) {
 }
 
 export default function QuickPlanner({ onBack, template, onAdvanced }) {
+  /* Firestore-ийн төвлөрсөн үнэ — нарийвчилсан тооцоолууртай ижил эх сурвалж */
+  const { base: priceBase } = useLivePrices(DEFAULT_PRICES);
   const [dims, setDims] = useState(template?.dims ? { l: template.dims.l, w: template.dims.w } : { l: 8, w: 6 });
   const [floors, setFloors] = useState(template?.floors || 1);
   const [winCount, setWinCount] = useState(4);
@@ -67,7 +70,7 @@ export default function QuickPlanner({ onBack, template, onAdvanced }) {
     const mk = (d, group) => {
       const qty = d.qty(geo, s, DEFAULT_NORMS[d.key]);
       const hours = qty * (DEFAULT_LABOR[d.key] ?? 0);
-      return { ...d, group, qty, total: qty * DEFAULT_PRICES[d.key], hours, laborCost: hours * rateOf(s, d.cat) };
+      return { ...d, group, qty, total: qty * priceBase[d.key], hours, laborCost: hours * rateOf(s, d.cat) };
     };
     const out = [];
     const secs = [];
@@ -83,7 +86,7 @@ export default function QuickPlanner({ onBack, template, onAdvanced }) {
     const ct = common.reduce((a, x) => a + x.total + x.laborCost, 0);
     if (ct > 0) secs.push({ label: "🖌 Дотор засал", opt: "", total: ct });
     return { lines: out, sections: secs.sort((a, b) => b.total - a.total) };
-  }, [geo, project, selections]);
+  }, [geo, project, selections, priceBase]);
 
   const s = project.settings;
   const materialTotal = lines.reduce((a, l) => a + l.total, 0);
