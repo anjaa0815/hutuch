@@ -6,6 +6,7 @@ import TemplateGallery from "./HouseTemplates.jsx";
 import AIPlanGenerator from "./AIPlanGenerator.jsx";
 import { usePro, ProUpgradeModal } from "./ProMembership.jsx";
 import { downloadDXF } from "./dxfExport.jsx";
+import MaterialBenchmark from "./miBenchmark.jsx";
 import { FURNITURE, FURNITURE_CATS, FurnitureIcon, PlacedFurniture } from "./FurnitureCatalog.jsx";
 
 /* ============================================================
@@ -1679,6 +1680,8 @@ export default function BuildEstimator({ onBack, preset }) {
                 <Field label="Багийн хүний тоо"><NumInput value={settings.crewSize} step={1} min={1} onChange={(v) => setS({ crewSize: Math.max(1, Math.round(v)) })} /></Field>
               </div>
             </div>
+            {/* RASMI материалын эрчимшлийн жишиг (кг/м²) */}
+            <MaterialBenchmark lines={lines} floorArea={geo.floorArea} />
           </div>
         )}
 
