@@ -38,26 +38,73 @@ export const MI_MATERIALS = [
   ["glass", "Шил"],
 ];
 
-/* --- Төсвийн мөрийг масс (кг) руу хөрвүүлэх дүрмүүд --- */
+/* --- Төсвийн мөрийг масс (кг) руу хөрвүүлэх дүрмүүд ---
+   Дарааллаар шалгана — эхний таарсан дүрэм хэрэгжинэ.
+   mat: null → RASMI-ийн 5 материалд хамаарахгүй (дулаалга, гипс, кабель, хоолой, тоног…):
+   харьцуулалтад оруулахгүй, "таниагүй" гэж ч тоолохгүй.
+   Нягт/жин: ФБС 24.4.6 ≈ 0.55м³×2400; зуурмаг, шавардлага ≈ 1800 кг/м³ (2см ≈ 36кг/м², 30 гэж авав);
+   стяжка ≈ 2000 кг/м³; швеллер 16 = 14.2 кг/м; винт шон Ø108×4 2.5м ≈ 30 кг;
+   цонх: зөвхөн шилний хэсэг ≈ 20 кг/м² (хүрээ тооцохгүй); OSB 12мм ≈ 8, 18мм ≈ 11 кг/м². */
+const W = "(?<![а-яөүёa-z])";                    // кирилл үгийн эхлэл (\b кирилл дээр ажилладаггүй)
+const word = (s) => new RegExp(W + "(?:" + s + ")", "i");
+
 const RULES = [
-  { re: /бетон|стяжк|зуурмаг/i,                 mat: "concrete", per: { "м³": 2400, "м3": 2400, "кг": 1, "т": 1000 } },
-  { re: /хөнгөн блок|эпс блок|газобетон|блок/i,  mat: "brick",    per: { "ш": 21.6, "м³": 600, "м²": 120, "кг": 1 } },
-  { re: /тоосго|кирпич/i,                        mat: "brick",    per: { "ш": 3.5, "м³": 1800, "м²": 250, "кг": 1 } },
-  { re: /арматур|каркас|тор/i,                   mat: "steel",    per: { "кг": 1, "т": 1000, "м": 0.888, "ш": 10 } },
-  { re: /профнастил|төмөр хуудас|металл|ган хийц|швеллер|дүнз төмөр/i, mat: "steel", per: { "м²": 5, "кг": 1, "т": 1000, "м": 8 } },
-  { re: /мод|дам нуруу|банз|шон|фанер|вагонк/i,  mat: "wood",     per: { "м³": 500, "м²": 12, "кг": 1, "м": 3 } },
-  { re: /цонх|шил|витраж/i,                      mat: "glass",    per: { "м²": 25, "ш": 40, "кг": 1 } },
+  /* 1. RASMI-д хамаарахгүй — бусад дүрэмд андуурч таарахаас өмнө шүүнэ */
+  { re: word("будаг|замаск|лак|праймер|грунт"),                                mat: null, why: "будаг, замаск" },
+  { re: word("радиатор|коллектор|конвектор|терморегулятор|зуух|насос|тэлэлтийн сав|бойлер"), mat: null, why: "халаалтын тоног" },
+  { re: word("кабель|розетка|унтраалга|гэрэлтүүлэг|автомат|самбар|кабель суваг"), mat: null, why: "цахилгаан" },
+  { re: word("ppr|pex|pvc|канализаци|хоолой|холбох хэрэгсэл|пресс холболт"),   mat: null, why: "хоолой, холбох хэрэгсэл" },
+  { re: word("угаалтуур|суултуур|шүршүүр|ванн"),                                mat: null, why: "сантехник" },
+  { re: word("гипс|eps|хөвөн|дулаалга|тусгаарлагч|хальс|мембран|подложка|таталттай тааз|сайдинг|битум|хавтанцар|чулуун хавтан|декоратив|хайрга|элс"), mat: null, why: "дулаалга, өнгөлгөө, бусад" },
+
+  /* 2. Бетон, зуурмаг (RASMI "concrete" — цементэн зуурмаг, стяжка багтана) */
+  { re: word("фбс"),                         mat: "concrete", per: { "ш": 1300, "м³": 2400 } },
+  { re: word("бетон"),                       mat: "concrete", per: { "м³": 2400, "кг": 1, "т": 1000 } },
+  { re: word("стяжк|цутгалт"),               mat: "concrete", per: { "м³": 2000, "кг": 1 } },
+  { re: word("зуурмаг"),                     mat: "concrete", per: { "м³": 1800, "кг": 1 } },
+  { re: word("цавуу"),                       mat: "concrete", per: { "кг": 1, "т": 1000 } },
+  { re: word("шавардлага|штукатур"),         mat: "concrete", per: { "м²": 30, "кг": 1 } },
+
+  /* 3. Өрлөгийн материал (RASMI "bricks") */
+  { re: word("хөнгөн блок|эпс блок|газобетон|пеноблок"), mat: "brick", per: { "ш": 21.6, "м³": 600, "кг": 1 } },
+  { re: word("цемент блок"),                 mat: "brick", per: { "ш": 15, "м³": 1100, "кг": 1 } },
+  { re: /блок 600×300×100/i,                 mat: "brick", per: { "ш": 10, "м³": 550 } },
+  { re: word("блок"),                        mat: "brick", per: { "ш": 21.6, "м³": 600, "м²": 120, "кг": 1 } },
+  { re: word("тоосго|кирпич"),               mat: "brick", per: { "ш": 3.5, "м³": 1800, "м²": 250, "кг": 1 } },
+
+  /* 4. Цонх — шилний хэсэг (модон цонх ч энд орно, хүрээ тооцохгүй) */
+  { re: word("цонх|витраж|шил"),             mat: "glass", per: { "м²": 20, "ш": 30, "кг": 1 } },
+
+  /* 5. Мод — "каркасын мод", "модон бүрээс + каркас" ганд орохгүйн тулд гангаас өмнө */
+  { re: /osb дэвсгэр/i,                      mat: "wood", per: { "м²": 11 } },          // 18мм
+  { re: word("osb|осб"),                     mat: "wood", per: { "м²": 8, "м³": 650, "кг": 1 } }, // 12мм
+  { re: word("ламинат"),                     mat: "wood", per: { "м²": 7, "кг": 1 } },
+  { re: word("mdf хаалга|модон хаалга"),     mat: "wood", per: { "ш": 30 } },
+  { re: word("мод|дам нуруу|банз|фанер|вагонк|паркет"), mat: "wood", per: { "м³": 500, "м²": 12, "кг": 1, "м": 3 } },
+
+  /* 6. Ган */
+  { re: word("винт шон"),                    mat: "steel", per: { "ш": 30, "м": 12 } },
+  { re: word("швеллер"),                     mat: "steel", per: { "м": 14.2, "кг": 1, "т": 1000 } },
+  { re: word("төмөр хаалга|ган хаалга"),     mat: "steel", per: { "ш": 60 } },
+  { re: word("арматур|тор"),                 mat: "steel", per: { "кг": 1, "т": 1000, "м": 0.888 } },
+  { re: word("профнастил|төмөр хуудас|металл|ган хийц|дүнз төмөр"), mat: "steel", per: { "м²": 5, "кг": 1, "т": 1000, "м": 8 } },
 ];
 
-/* Нэг мөрөөс масс гаргана. Таниагүй бол null. */
+/* Нэгжийг нэг хэлбэрт оруулна: m2/м2 → м², m3/м3 → м³, латин m → м */
+const normUnit = (unit) => String(unit || "").trim().toLowerCase()
+  .replace(/m/g, "м").replace(/^м2$/, "м²").replace(/^м3$/, "м³");
+
+/* Нэг мөрөөс масс гаргана.
+   { mat, kg } — хөрвүүлсэн; { mat: null, why } — RASMI-д хамаарахгүй; null — таниагүй. */
 export function lineToMass(name, unit, qty) {
   const q = Number(qty);
   if (!name || !isFinite(q) || q <= 0) return null;
-  const u = String(unit || "").trim().toLowerCase().replace("m", "м");
+  const u = normUnit(unit);
   for (const r of RULES) {
     if (!r.re.test(name)) continue;
-    const k = Object.keys(r.per).find((x) => x.toLowerCase() === u);
-    if (!k) return null;              // нэгж нь тохирохгүй — алгасна
+    if (r.mat === null) return { mat: null, why: r.why };
+    const k = Object.keys(r.per).find((x) => x === u);
+    if (!k) return null;              // нэгж нь тохирохгүй — таниагүйд тооцно
     return { mat: r.mat, kg: q * r.per[k] };
   }
   return null;
@@ -65,15 +112,16 @@ export function lineToMass(name, unit, qty) {
 
 /* Төсвийн мөрүүдээс кг/м² тооцоолно */
 export function computeMI(lines = [], floorArea = 0) {
-  const sum = {}, unknown = [];
+  const sum = {}, unknown = [], other = [];
   lines.forEach((l) => {
     const m = lineToMass(l.name, l.unit, l.qty);
     if (!m) { if (l.name) unknown.push(l.name); return; }
+    if (m.mat === null) { other.push(l.name); return; }
     sum[m.mat] = (sum[m.mat] || 0) + m.kg;
   });
   const mi = {};
   if (floorArea > 0) Object.keys(sum).forEach((k) => { mi[k] = sum[k] / floorArea; });
-  return { mi, kg: sum, unknown };
+  return { mi, kg: sum, unknown, other };
 }
 
 /* Жишигтэй харьцуулах дүгнэлт */
@@ -107,7 +155,7 @@ export default function MaterialBenchmark({ lines = [], floorArea = 0 }) {
   const [fn, setFn] = useState("RS");
   const [st, setSt] = useState("M");
 
-  const { mi, unknown } = useMemo(() => computeMI(lines, floorArea), [lines, floorArea]);
+  const { mi, unknown, other } = useMemo(() => computeMI(lines, floorArea), [lines, floorArea]);
   const ranges = MI_RANGES[`${fn}|${st}|${region}`] || {};
   const rows = MI_MATERIALS
     .map(([key, label]) => ({ key, label, v: mi[key], r: ranges[key] }))
@@ -162,6 +210,12 @@ export default function MaterialBenchmark({ lines = [], floorArea = 0 }) {
         <details className="mt-3">
           <summary className="cursor-pointer text-[10px] text-stone-400">Таниагүй {unknown.length} мөр</summary>
           <p className="mt-1 text-[10px] leading-snug text-stone-400">{[...new Set(unknown)].join(" · ")}</p>
+        </details>
+      )}
+      {other.length > 0 && (
+        <details className="mt-1">
+          <summary className="cursor-pointer text-[10px] text-stone-400">Жишигт хамаарахгүй {other.length} мөр (дулаалга, гипс, цахилгаан, сантехник…)</summary>
+          <p className="mt-1 text-[10px] leading-snug text-stone-400">{[...new Set(other)].join(" · ")}</p>
         </details>
       )}
 
