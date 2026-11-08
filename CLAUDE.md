@@ -38,6 +38,8 @@
 | `dxfExport.jsx` | Планыг DXF (AutoCAD R12, мм) болгож экспортлох (Pro) |
 | `miBenchmark.jsx` | RASMI материалын эрчимшлийн жишиг (кг/м²) — төсвийн мөрийг масс руу хөрвүүлж харьцуулна ("Төсөв" таб) |
 | `priceStore.js` | `useLivePrices()` — Firestore `config/prices`-оос төвлөрсөн үнэ ачаална (BuildEstimator, QuickPlanner) |
+| `energyEstimate.js` | Халаалтын дулааны баланс: `wallU()` (давхаргаар), `heatBalance()`, `estimateHeating()`. λ/U лавлах утгууд. EngineeringTools-ийн HeatLoss ч үүнийг ашиглана |
+| `EnergyPanel.jsx` | "Төсөв" таб: жилийн халаалтын кВт·ц/₮, зуухны чадлын шалгалт, дулаалгын харьцуулалт (өртөг, хэмнэлт, нөхөгдөх хугацаа) |
 
 Import-ын бүтэц: `App.jsx` → BuildEstimator, QuickPlanner, EngineeringTools, AdviceChat,
 AIPlanGenerator (`AIPlanInline`), ProMembership, AuthPanel, firebase.js.
@@ -138,6 +140,9 @@ Firebase Console → Firestore → Rules → шинэ match блокийг **н�
       `RULES` нь төсвийн бүх 84 мөрийг таньдаг. Шинэ материалын мөр нэмбэл `RULES`-д дүрэм нэмнэ
       (RASMI-ийн 5 материалд хамаарахгүй бол `mat: null`). Кирилл үгэнд `\b` ажилладаггүй тул `word()` ашиглана.
       Нээлттэй асуулт: "Дотор шавардлага" цементэн (бетон, 30кг/м²) гэж тооцогдож байгаа — гипсэн бол `mat: null`.
+- [ ] Таазны дулаалга тооцоолуурын материалд байхгүй (EnergyPanel-д л сонгоно) — `ceiling`/`roof` системд нэмэх.
+      Шинэ `extWall`/`insulation`/`windows` сонголт нэмбэл `energyEstimate.js`-ийн хүснэгтэд λ/U нэмнэ, үгүй бол халаалтын тооцоо гарахгүй.
+- [ ] Аймгийн төвүүдийн загварын темп., градус·хоног (БНбД 23-01-09) — одоо зөвхөн УБ
 - [ ] Gemini free tier рүү шилжих (Vercel env солих), Groq-г нөөцөд үлдээх
 - [ ] FB кампанит ажил: постууд бэлэн, дулаан алдагдлын тоо бөглөх, демо видео бичих
 - [ ] Гадна/дотор ханыг материалын тооцоонд ялгаж тусгах (одоо зөвхөн харагдац)

@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { heatBalance } from "./energyEstimate.js";
 
 /* ============================================================
    ХӨТӨЧ — Инженерийн тооцоо (hutuch.com)
@@ -77,14 +78,12 @@ function HeatLoss() {
     const uW = WALL_U.find((x) => x[0] === wall)[2];
     const uR = ROOF_U.find((x) => x[0] === roof)[2];
     const uG = WIN_U.find((x) => x[0] === win)[2];
-    const uFloor = 0.4;
-    const netWall = Math.max(0, wallArea - winArea);
-    const UA = netWall * uW + floorArea * uR + floorArea * uFloor * 0.5 + winArea * uG; // шал: газартай тул 0.5 коэфф
-    const vol = floorArea * height;
-    const infUA = 0.34 * ach * vol; // Вт/К (агаарын 0.34 Вт·ц/м³К)
-    const Q = (UA + infUA) * dT;
+    /* Тооцоолууртай (EnergyPanel) ижил томьёо — energyEstimate.js */
+    const { Q, annualKwh } = heatBalance({
+      wallArea: Math.max(0, wallArea - winArea), winArea, roofArea: floorArea, floorArea,
+      volume: floorArea * height, uWall: uW, uWin: uG, uRoof: uR, ach, tIn, tOut, hdd,
+    });
     const boiler = Q * 1.2 / 1000;
-    const annualKwh = (UA + infUA) * 24 * hdd / 1000;
     return { dT, Q, perM2: Q / floorArea, boiler, annualKwh, annualCost: annualKwh * price };
   }, [floorArea, wallArea, winArea, height, wall, roof, win, tIn, tOut, ach, hdd, price]);
 

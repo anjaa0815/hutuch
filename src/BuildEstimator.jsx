@@ -8,6 +8,7 @@ import { usePro, ProUpgradeModal } from "./ProMembership.jsx";
 import { downloadDXF } from "./dxfExport.jsx";
 import MaterialBenchmark from "./miBenchmark.jsx";
 import { useLivePrices } from "./priceStore.js";
+import EnergyPanel from "./EnergyPanel.jsx";
 import { FURNITURE, FURNITURE_CATS, FurnitureIcon, PlacedFurniture } from "./FurnitureCatalog.jsx";
 
 /* ============================================================
@@ -1280,7 +1281,17 @@ export default function BuildEstimator({ onBack, preset }) {
     return out;
   }, [geo, settings, selections, norms, prices, laborNorms]);
 
-  const materialTotal = lines.reduce((a, l) => a + l.total, 0);
+  /* Дулаалгын сонголт бүрийн өртөг (материал + хөлс) — EnergyPanel-ийн харьцуулалтад */
+  const insulationCosts = useMemo(() => {
+    if (!geo) return {};
+    const sys = SYSTEMS.find((x) => x.comp === "insulation");
+    return Object.fromEntries(sys.options.map((o) => [o.id, o.items.reduce((a, d) => {
+      const qty = d.qty(geo, settings, norms[d.key]);
+      return a + qty * prices[d.key] + qty * (laborNorms[d.key] ?? 0) * rateOf(settings, d.cat);
+    }, 0)]));
+  }, [geo, settings, norms, prices, laborNorms]);
+
+  const materialTotal =lines.reduce((a, l) => a + l.total, 0);
   const totalHours = lines.reduce((a, l) => a + l.hours, 0);
   const laborTotal = lines.reduce((a, l) => a + l.laborCost, 0);
   const ndsh = laborTotal * settings.ndshPct / 100;
@@ -1695,6 +1706,9 @@ export default function BuildEstimator({ onBack, preset }) {
                 <Field label="Багийн хүний тоо"><NumInput value={settings.crewSize} step={1} min={1} onChange={(v) => setS({ crewSize: Math.max(1, Math.round(v)) })} /></Field>
               </div>
             </div>
+            {/* Жилийн халаалтын зардал + дулаалгын харьцуулалт */}
+            <EnergyPanel geo={geo} settings={settings} setS={setS} selections={selections} insulationCosts={insulationCosts}
+              onPickInsulation={(id) => setSelections((x) => ({ ...x, insulation: id }))} />
             {/* RASMI материалын эрчимшлийн жишиг (кг/м²) */}
             <MaterialBenchmark lines={lines} floorArea={geo.floorArea} />
           </div>
