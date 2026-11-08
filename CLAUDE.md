@@ -39,6 +39,8 @@
 | `miBenchmark.jsx` | RASMI материалын эрчимшлийн жишиг (кг/м²) — төсвийн мөрийг масс руу хөрвүүлж харьцуулна ("Төсөв" таб) |
 | `priceStore.js` | `useLivePrices()` — Firestore `config/prices`-оос төвлөрсөн үнэ ачаална (BuildEstimator, QuickPlanner) |
 | `energyEstimate.js` | Халаалтын дулааны баланс: `wallU()` (давхаргаар), `heatBalance()`, `estimateHeating()`. λ/U лавлах утгууд. EngineeringTools-ийн HeatLoss ч үүнийг ашиглана |
+| `AdminPanel.jsx` | Админ хуудас (`view === 'admin'`): зах зээлийн үнэ засах (`config/prices`), Pro хүсэлт/гишүүдийг удирдах (`proRequests`, `proStatus`). `AdminNavButton` толгойд зөвхөн админд харагдана |
+| `admin.js` | `ADMIN_EMAILS`, `isAdminUser(u)` — UI-д л ашиглана, жинхэнэ хамгаалалт нь Firestore дүрмийн `isAdmin()` |
 | `EnergyPanel.jsx` | "Төсөв" таб: жилийн халаалтын кВт·ц/₮, зуухны чадлын шалгалт, дулаалгын харьцуулалт (өртөг, хэмнэлт, нөхөгдөх хугацаа) |
 
 Import-ын бүтэц: `App.jsx` → BuildEstimator, QuickPlanner, EngineeringTools, AdviceChat,
@@ -51,23 +53,32 @@ ProMembership, dxfExport, FurnitureCatalog.
 ⚠️ `src/src/` (хуучин App.jsx, AdviceChat.jsx) ба `src/functions/` нь хуучин хуулбар — import
 хийгддэггүй. Эдгээрийг засварлахгүй, андуурч хуулж тавихгүй (дүрэм 2-ыг үз).
 
+## Админ хуудас
+
+- Админ имэйлээр (Google эсвэл баталгаажсан имэйл) нэвтэрхэд толгойд **🛠 Админ** товч гарна
+- Админ нэмэх: `src/admin.js`-ийн `ADMIN_EMAILS` БА Console дүрмийн `isAdmin()` — хоёуланг нь засна
+- Firestore дүрэм (Console-д нэмсэн байх ёстой): `isAdmin()` функц + `config/prices` write,
+  `proStatus/{uid}` админ read/write, `proRequests/{uid}` — блокийг `firestore.rules`-ээс хуулна
+
 ## Pro гишүүнчлэл
 
-- Төлбөр: дансаар шилжүүлнэ → админ **гараар** идэвхжүүлнэ
-- Идэвхжүүлэх: Firestore Console → `proStatus` коллекц → Document ID = хэрэглэгчийн uid → талбар `isPro` (boolean) = `true`
+- Төлбөр: дансаар шилжүүлнэ → хэрэглэгч Pro цонхонд «✓ Төлбөр шилжүүлсэн» дарна (`proRequests/{uid}`)
+  → админ хуудас → Pro таб → дансны хуулгаас шалгаад **Идэвхжүүлэх**
+- Гараар (хуучин арга): Firestore Console → `proStatus` коллекц → Document ID = хэрэглэгчийн uid → талбар `isPro` (boolean) = `true`
 - Хугацаа автоматаар дуусдаггүй (хожим `expiresAt` нэмж болно)
 - Pro боломжууд: хязгааргүй AI, cloud төсөл, төсвийн AI тайлбар, DXF экспорт, AI план үүсгэгч
 - Үнэ: 30,000₮/сар, 300,000₮/жил (`ProMembership.jsx`-д `PRO_PRICE`)
 
 ## Зах зээлийн үнэ шинэчлэх (код засахгүй)
 
-- Firestore Console → `config` коллекц → `prices` баримт → талбар нэмэх:
+- Хялбар арга: **Админ хуудас → 💰 Зах зээлийн үнэ** — 104 материал, хайлт, анхдагчаас ялгаа %
+- Console-оор: Firestore Console → `config` коллекц → `prices` баримт → талбар нэмэх:
   нэр = материалын key (жишээ `fl_screed1`), төрөл number, утга = ₮
 - `updatedAt` талбар (timestamp эсвэл `"2026-11-08"` string) — "Норм & Үнэ" таб дээр огноо харагдана
 - Зөвхөн өөрчилсөн үнээ бичнэ — бусад нь `BuildEstimator.jsx`-ийн анхдагч `price:` хэвээр
 - Key-г олох: "Норм & Үнэ" таб дээр үнийн нүдэнд хулгана аваачихад `key: ...` гарна
 - Хэрэглэгчийн гараар засварласан, эсвэл төслөөс ачаалсан үнийг дарахгүй. Хэрэглэгчид хуудас дахин ачаалахад шинэ үнэ авна
-- Firestore дүрэм: `match /config/prices { allow read: if true; allow write: if false; }`
+- Firestore дүрэм: `match /config/prices { allow read: if true; allow write: if isAdmin(); }`
 
 ## AI backend (тусдаа репо)
 
@@ -99,8 +110,8 @@ git push
 
 Firestore дүрэм: `firebase deploy --only firestore` нь Windows дээр colon алдаа өгдөг →
 Firebase Console → Firestore → Rules → шинэ match блокийг **нэмж** **Publish**.
-⚠️ Репо дахь `firestore.rules` нь Console-оос хоцорсон (proStatus, aiUsage зөрнө) — бүхэлд нь хуулж
-тавибал Pro болон AI лимит эвдэрнэ. Console-ын дүрмийг репо руу синк хийх хүртэл зөвхөн блок нэмнэ.
+Репо дахь `firestore.rules` нь Console-той синк (2026-11-08). Console-д засвар хийвэл файлыг ч шинэчилнэ —
+зөрвөл бүхэлд нь хуулж тавихаас өмнө харьцуулна.
 
 ---
 

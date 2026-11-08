@@ -1,22 +1,49 @@
 rules_version = '2';
-// ⚠️ Энэ файл Firebase Console дээрх бодит дүрмээс ХОЦОРСОН (proStatus, aiUsage-ийн дүрэм зөрнө).
-// Бүхэлд нь хуулж Publish хийвэл Pro болон AI лимит эвдэрнэ — зөвхөн шинэ match блокийг Console-д нэмнэ.
+// Firebase Console дээрх дүрэмтэй синк хийсэн (2026-11-08). Console-д засвар хийвэл энд ч хуулна.
+// `firebase deploy --only firestore` Windows дээр алдаа өгдөг тул Console → Rules → Publish.
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Төвлөрсөн зах зээлийн үнэ — бүгд уншина, зөвхөн админ Console-оос засна (src/priceStore.js)
+    // Админ — src/admin.js-ийн ADMIN_EMAILS-тэй ижил байна (баталгаажсан имэйл)
+    function isAdmin() {
+      return request.auth != null
+        && request.auth.token.email == "anjaaariunjargal@gmail.com"
+        && request.auth.token.email_verified == true;
+    }
+    // Төвлөрсөн зах зээлийн үнэ — бүгд уншина, админ хуудаснаас засна (priceStore.js, AdminPanel.jsx)
     match /config/prices {
       allow read: if true;
-      allow write: if false;
+      allow write: if isAdmin();
     }
-    // Хэрэглэгч зөвхөн өөрийн төслүүдэд ханддаг
-    match /users/{uid}/projects/{projectId} {
-      allow read, write, delete: if request.auth != null && request.auth.uid == uid;
+    // Хэрэглэгчийн хувийн баримт ба төслүүд — зөвхөн эзэн
+    match /users/{uid} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+      match /projects/{projectId} {
+        allow read, write, delete: if request.auth != null && request.auth.uid == uid;
+      }
     }
-    // AI хэрэглээний тоолуур — зөвхөн сервер (Cloud Function admin) бичнэ
+    // Pro статус — нэг баримтыг uid-аар хэн ч уншина (Vercel apiKey-ээр, usePro()),
+    // жагсаалт ба бичих нь зөвхөн админ (имэйл агуулдаг тул list нээлттэй байж болохгүй)
+    match /proStatus/{uid} {
+      allow get: if true;
+      allow list: if isAdmin();
+      allow write: if isAdmin();
+    }
+    // «Төлбөр шилжүүлсэн» хүсэлт — хэрэглэгч өөрийнхөө баримтыг үүсгэнэ, админ уншиж устгана
+    match /proRequests/{uid} {
+      allow read: if isAdmin() || (request.auth != null && request.auth.uid == uid);
+      allow create, update: if request.auth != null && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(["email", "name", "plan", "createdAt"]);
+      allow delete: if isAdmin();
+    }
+    // AI хэрэглээний өдрийн тоолуур — Vercel функц бичдэг
+    // ⚠️ Хэн ч бичиж (лимитээ 0 болгож) чадна — Vercel-ийг service account руу шилжүүлээд хаана
     match /aiUsage/{docId} {
-      allow read, write: if false;
+      allow read: if true;
+      allow write: if request.resource.data.count is int
+                   && request.resource.data.count >= 0
+                   && request.resource.data.count < 100000;
+      allow delete: if false;
     }
-    // Бусад бүх зам хаалттай
     match /{document=**} {
       allow read, write: if false;
     }

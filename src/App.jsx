@@ -8,6 +8,7 @@ import { app, auth, db, track } from './firebase.js';
 import { AIPlanInline } from './AIPlanGenerator.jsx';
 import { usePro, ProUpgradeModal } from './ProMembership.jsx';
 import { AuthButton } from './AuthPanel.jsx';
+import AdminPanel, { AdminNavButton } from './AdminPanel.jsx';
 import { 
   Calculator, BrickWall, PaintBucket, Ruler, Info, 
   Menu, X, Grid, Cylinder, Box, Scroll, Coins, 
@@ -357,6 +358,7 @@ const Header = ({ cartCount, onNavigate, onOpenCart, darkMode, toggleDarkMode, u
                 )}
             </nav>
             <div className="flex items-center gap-3">
+                <AdminNavButton onNavigate={onNavigate} />
                 <AuthButton />
                 <button onClick={() => setUserRole(userRole === 'user' ? 'seller' : 'user')} className={`p-2.5 rounded-xl transition-colors flex items-center gap-2 text-xs font-bold ${userRole === 'seller' ? 'bg-orange-100 text-orange-700' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'}`}>
                     {userRole === 'user' ? <User size={16}/> : <Store size={16}/>}
@@ -1907,6 +1909,7 @@ export default function App() {
                             {view === 'rental' && <RentalScreen onBack={() => handleNav('services')} />}
                             {view === 'estimator' && <BuildEstimator onBack={() => setView('home')} preset={estimatorPreset} />}
                             {view === 'tools' && <EngineeringTools onBack={() => setView('home')} />}
+                            {view === 'admin' && <AdminPanel onBack={() => setView('home')} />}
                         </>
                     )}
                 </main>

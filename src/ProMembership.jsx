@@ -2,12 +2,13 @@ import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { auth, db } from "./firebase.js";
 import { onAuthStateChanged } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
 
 /* ============================================================
    ХӨТӨЧ — Pro гишүүнчлэл
-   users/{uid} баримтын isPro талбараар эрхийг тодорхойлно.
-   Админ (эзэн) Firebase Console-оос гараар isPro=true болгоно.
+   proStatus/{uid} баримтын isPro талбараар эрхийг тодорхойлно.
+   Хэрэглэгч «Төлбөр шилжүүлсэн» дарахад proRequests/{uid} үүснэ →
+   админ "Админ" хуудаснаас (AdminPanel.jsx) шалгаад идэвхжүүлнэ.
 
    usePro() → { user, isPro, loading }  — хаанаас ч Pro эрх шалгана
    <ProUpgradeModal onClose /> — гишүүнчлэлийн санал + дансны мэдээлэл
@@ -52,6 +53,42 @@ export function ProBadge() {
     <span className="ml-1 rounded-full bg-gradient-to-r from-amber-500 to-orange-600 px-2 py-0.5 text-[10px] font-black text-white">
       PRO
     </span>
+  );
+}
+
+/* «Төлбөр шилжүүлсэн» — админд хүсэлт илгээнэ (proRequests/{uid}) */
+function PaidNotice() {
+  const { user, isPro } = usePro();
+  const [plan, setPlan] = useState("month");
+  const [state, setState] = useState("");   // "" | busy | sent | error
+  if (isPro) return null;
+  if (!user || user.isAnonymous) {
+    return <p className="mt-3 text-center text-[11px] text-stone-500">Төлбөр шилжүүлсний дараа <b>нэвтэрч</b> орж мэдэгдэнэ үү.</p>;
+  }
+  const send = async () => {
+    setState("busy");
+    try {
+      await setDoc(doc(db, "proRequests", user.uid), {
+        email: user.email || "", name: user.displayName || "", plan, createdAt: serverTimestamp(),
+      });
+      setState("sent");
+    } catch { setState("error"); }
+  };
+  if (state === "sent") {
+    return <p className="mt-3 rounded-xl bg-emerald-50 px-3 py-2 text-center text-xs text-emerald-800">✓ Хүсэлт илгээгдлээ. Төлбөр баталгаажмагц Pro идэвхжинэ.</p>;
+  }
+  return (
+    <div className="mt-3 flex items-center gap-2">
+      <select value={plan} onChange={(e) => setPlan(e.target.value)} className="rounded-xl border border-stone-300 px-2 py-2.5 text-xs">
+        <option value="month">Сар — {PRO_PRICE}</option>
+        <option value="year">Жил — {PRO_PRICE_YEAR}</option>
+      </select>
+      <button onClick={send} disabled={state === "busy"}
+        className="flex-1 rounded-xl bg-orange-600 py-2.5 text-sm font-bold text-white hover:bg-orange-700 disabled:opacity-50">
+        {state === "busy" ? "Илгээж байна…" : "✓ Төлбөр шилжүүлсэн"}
+      </button>
+      {state === "error" && <span className="text-[10px] text-red-600">Алдаа — дахин оролдоно уу</span>}
+    </div>
   );
 }
 
@@ -121,9 +158,10 @@ export function ProUpgradeModal({ onClose, reason }) {
             <div className="flex justify-between"><span className="text-stone-500">Хүлээн авагч</span><span className="font-medium">{BANK_INFO.name}</span></div>
           </div>
           <p className="mt-3 rounded-lg bg-orange-50 px-3 py-2 text-[11px] leading-snug text-stone-600">
-            Гүйлгээний утга дээр <b>бүртгэлтэй имэйлээ</b> бичээрэй. Төлбөр хийсний дараа таны Pro эрх <b>24 цагийн дотор</b> идэвхжинэ. Асуувал: hutuch.com Холбоо барих хэсгээр.
+            Гүйлгээний утга дээр <b>бүртгэлтэй имэйлээ</b> бичээрэй. Төлбөр хийсний дараа доорх товчийг дарвал таны Pro эрх <b>24 цагийн дотор</b> идэвхжинэ. Асуувал: hutuch.com Холбоо барих хэсгээр.
           </p>
         </div>
+        <PaidNotice />
       </div>
     </div>,
     document.body
