@@ -25,6 +25,8 @@ import { FURNITURE, FURNITURE_CATS, FurnitureIcon, PlacedFurniture } from "./Fur
 const ROOM_COLORS = ["#bfdbfe", "#bbf7d0", "#fef08a", "#fbcfe8", "#e9d5ff", "#fed7aa", "#a5f3fc", "#e2e8f0"];
 let _id = 10;
 const uid = () => `r${_id++}`;
+/* Хэрэглэгчийн үйлдлээр үүсэх объектын давтагдашгүй id (хадгалсан төсөлтэй давхцахгүй) */
+const stampId = (prefix) => prefix + Date.now();
 
 const rect = (x, y, w, l) => [{ x, y }, { x: x + w, y }, { x: x + w, y: y + l }, { x, y: y + l }];
 const lShape = (x, y) => [{ x, y }, { x: x + 5, y }, { x: x + 5, y: y + 2.5 }, { x: x + 2.5, y: y + 2.5 }, { x: x + 2.5, y: y + 5 }, { x, y: y + 5 }];
@@ -485,7 +487,7 @@ function MaterialSelector({ selections, setSelections, lines }) {
 }
 
 /* ---------- 2D SVG план ---------- */
-function PlanCanvas({ rooms, setRooms, selected, setSelected, drawMode, setDrawMode, furniture, setFurniture, wallKind, tool, freeWalls, setFreeWalls }) {
+function PlanCanvas({ rooms, setRooms, selected, setSelected, drawMode, furniture, setFurniture, wallKind, tool, freeWalls, setFreeWalls }) {
   /* Дэлгэцийн хэмжээнээс хамааруулж масштаб — гар утсанд жижиг */
   const isMobile = typeof window !== "undefined" && window.innerWidth < 640;
   const SCALE = isMobile ? 30 : 42, PAD = isMobile ? 1.0 : 1.5;
@@ -558,12 +560,12 @@ function PlanCanvas({ rooms, setRooms, selected, setSelected, drawMode, setDrawM
   const finishWall = (pts = wallPts) => {
     // 2 цэг = чөлөөт хана (өрөө биш) — таславч, хашаа гэх мэт
     if (pts.length === 2) {
-      setFreeWalls((ws) => [...ws, { id: "w" + Date.now(), a: pts[0], b: pts[1], kind: wallKind }]);
+      setFreeWalls((ws) => [...ws, { id: stampId("w"), a: pts[0], b: pts[1], kind: wallKind }]);
       setWallPts([]); setGhost(null);
       return;
     }
     if (pts.length < 3) { setWallPts([]); setGhost(null); return; }
-    const id = "r" + Date.now();
+    const id = stampId("r");
     setRooms((rs) => [...rs, {
       id,
       name: `${wallKind === "ext" ? "Гадна" : "Дотор"} өрөө ${rs.length + 1}`,
@@ -629,8 +631,6 @@ function PlanCanvas({ rooms, setRooms, selected, setSelected, drawMode, setDrawM
     pt = { ...pt, ...orthoLock(wallPts[wallPts.length - 1], pt) };
     setGhost(pt);
   };
-  const undoWallPt = () => setWallPts((w) => w.slice(0, -1));
-  const cancelWall = () => { setWallPts([]); setGhost(null); };
 
   const [selFurn, setSelFurn] = useState(null);
   const startFurnDrag = (e, f) => {

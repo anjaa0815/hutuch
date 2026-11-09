@@ -5,7 +5,7 @@ import reactRefresh from 'eslint-plugin-react-refresh'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
-  globalIgnores(['dist']),
+  globalIgnores(['dist', 'skills', '.agents', '.claude', '.junie']),
   {
     files: ['**/*.{js,jsx}'],
     extends: [
@@ -23,7 +23,14 @@ export default defineConfig([
       },
     },
     rules: {
-      'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]' }],
+      'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]', caughtErrors: 'none', ignoreRestSiblings: true }],
+      // Зөвхөн dev HMR-д нөлөөлнө — тогтмол/функц экспортлох нь production-д асуудалгүй
+      'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
     },
+  },
+  {
+    // Firebase Functions (Node.js, CommonJS)
+    files: ['functions/**/*.js'],
+    languageOptions: { globals: globals.node, sourceType: 'commonjs' },
   },
 ])

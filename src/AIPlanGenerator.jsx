@@ -183,7 +183,6 @@ const MIN_DOOR = 0.9;      // хаалга багтах хамгийн бага 
 const EPS = 0.02;
 
 /* Өрөөний ирмэг: 0=дээд, 1=баруун, 2=доод, 3=зүүн */
-function edgeOf(box, side) { return { 0: 0, 1: 1, 2: 2, 3: 3 }[side]; }
 
 /* Хоёр тэгш өнцөгтийн нийтлэг ханыг олно */
 function sharedWall(a, b) {
@@ -273,7 +272,7 @@ function buildRooms(layout) {
     const { sw } = e;
     const w = Math.min(0.9, (sw.hi - sw.lo) * 0.8);
     const mid = (sw.lo + sw.hi) / 2;
-    const a = boxes[e.i], b = boxes[e.j];
+    const a = boxes[e.i];
     openings[e.i].push({
       id: uid(), type: "door", edge: sw.aEdge,
       t: Math.min(0.9, Math.max(0.1, tOnEdge(a, sw.aEdge, mid))),

@@ -27,10 +27,10 @@ export const BANK_INFO = {
 export function usePro() {
   const [user, setUser] = useState(null);
   const [isPro, setIsPro] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(Boolean(auth));
 
   useEffect(() => {
-    if (!auth) { setLoading(false); return; }
+    if (!auth) return;
     return onAuthStateChanged(auth, async (u) => {
       setUser(u);
       if (u && db) {
