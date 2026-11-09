@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { heatBalance } from "./energyEstimate.js";
+import { heatBalance, HDD_ZONES } from "./energyEstimate.js";
 
 /* ============================================================
    ХӨТӨЧ — Инженерийн тооцоо (hutuch.com)
@@ -100,6 +100,9 @@ function HeatLoss() {
         <Sel label="Дээвэр / тааз" value={roof} onChange={setRoof} options={ROOF_U.map(([v, l]) => [v, l])} />
         <Sel label="Цонх" value={win} onChange={setWin} options={WIN_U.map(([v, l]) => [v, l])} />
         <Num label="Агаар солилцоо" unit="удаа/цаг" value={ach} onChange={setAch} step={0.1} />
+        <Sel label="Байршил (хэм хоногийн бүс)" value={HDD_ZONES.find((z) => z.hdd === hdd)?.zone ?? (hdd === 7800 ? "ub" : "custom")}
+          onChange={(v) => { if (v === "ub") setHdd(7800); else { const z = HDD_ZONES.find((x) => x.zone === v); if (z) setHdd(z.hdd); } }}
+          options={[["ub", "УБ анхдагч (7800)"], ...HDD_ZONES.map((z) => [z.zone, `${z.zone} бүс (${z.hdd}): ${z.places.join(", ")}`]), ...(HDD_ZONES.some((z) => z.hdd === hdd) || hdd === 7800 ? [] : [["custom", `Гараар (${hdd})`]])]} />
         <Num label="Халаалтын градус·хоног" unit="°C·хоног" value={hdd} onChange={setHdd} step={100} />
         <Num label="Эрчим хүчний үнэ" unit="₮/кВт·ц" value={price} onChange={setPrice} step={10} />
       </div>
@@ -110,7 +113,7 @@ function HeatLoss() {
         <Res label="Жилийн халаалтын эрчим хүч" value={`${fmt(r.annualKwh, 0)} кВт·ц`} />
         <Res label="Жилийн зардал (цахилгаанаар)" value={`${fmt(r.annualCost / 1e6, 2)} сая ₮`} />
       </div>
-      <Note>УБ-ын загварын гадна температур −39°C, халаалтын улирал ≈7800 °C·хоног. Дулаалгын сонголтоо солиод жилийн зардал хэрхэн өөрчлөгдөхийг харьцуулаарай — энэ л дулаалгын хөрөнгө оруулалтын үндэслэл. U утгууд нийтлэг хийцийн ойролцоо утга; нарийн тооцоог БНбД 23-02-д заасан аргачлалаар инженер баталгаажуулна.</Note>
+      <Note>УБ-ын загварын гадна температур −39°C, халаалтын улирал ≈7800 °C·хоног. Аймагт бол «Байршил»-аас бүсээ сонгоно (БНбД «Барилгын дулаан хамгаалалт»-ын бүсчлэл); гадна загварын темп.-ийг БНбД 23-01-09-өөс гараар оруулна. Дулаалгын сонголтоо солиод жилийн зардал хэрхэн өөрчлөгдөхийг харьцуулаарай — энэ л дулаалгын хөрөнгө оруулалтын үндэслэл. U утгууд нийтлэг хийцийн ойролцоо утга; нарийн тооцоог БНбД 23-02-д заасан аргачлалаар инженер баталгаажуулна.</Note>
     </div>
   );
 }
