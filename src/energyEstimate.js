@@ -32,8 +32,23 @@ export const INSULATION_LAYERS = {
 /* Цонх — windows сонголтоор (W/м²K) */
 export const WINDOW_U = { pvc: 1.8, wood_win: 1.8, alu: 2.6 };
 
-/* Тааз/дээврийн дулаалга — тооцоолуурт сонголт байхгүй тул энд сонгоно (EngineeringTools ROOF_U-тэй ижил) */
+/* Тааз/дээврийн дулаалга — EngineeringTools-ийн ROOF_U-тэй ижил (гараар сонгох үед) */
 export const ROOF_U = [["ins", "Дулаалгатай тааз (≈200мм хөвөн)", 0.25], ["thin", "Сул дулаалгатай", 0.6], ["none", "Дулаалгагүй", 1.1]];
+
+/* Тооцоолуурын "Таазны дулаалга" (ceilInsulation) сонголтын U-утга (Вт/м²K).
+   U = 1 / (Rsi + R_тааз ба хүйтэн мансарда ≈0.7 + d/λ + Rse), хөвөн λ = 0.040 */
+export const CEILING_INSULATION_U = { rw200: 0.17, rw150: 0.22, rw100: 0.31, none: 1.1 };
+export const CEILING_INSULATION_LABEL = { rw200: "Чулуун хөвөн 200мм", rw150: "Чулуун хөвөн 150мм", rw100: "Чулуун хөвөн 100мм", none: "Дулаалгагүй" };
+
+/* Халаалтын улирлын хэм хоног (ХУХХ), °C·хоног — БНбД "Барилгын дулаан хамгаалалт" (2021)
+   3-р хүснэгт, орон нутгийн бүсчлэл. Хүснэгтэд нэр нь тодорхой гарсан аймгуудыг л оруулав.
+   Гадна загварын темп.-ийг (хамгийн хүйтэн 5 хоног) БНбД 23-01-09-өөс гараар оруулна. */
+export const HDD_ZONES = [
+  { zone: "I", hdd: 7000, places: ["Улаанбаатар", "Архангай", "Говь-Алтай", "Завхан", "Сэлэнгэ"] },
+  { zone: "II", hdd: 6500, places: ["Баян-Өлгий", "Баянхонгор", "Булган", "Орхон (Эрдэнэт)", "Дархан-Уул"] },
+  { zone: "III", hdd: 6000, places: ["Өвөрхангай", "Ховд", "Хэнтий", "Дорнод", "Дундговь", "Сүхбаатар"] },
+  { zone: "IV", hdd: 5000, places: ["Дорноговь", "Говь-Сүмбэр", "Өмнөговь"] },
+];
 
 export const FLOOR_U = 0.4;          // газартай шал
 export const FLOOR_FACTOR = 0.5;     // газрын температур агаарынхаас өндөр тул
@@ -67,6 +82,8 @@ export function heatBalance({ wallArea, winArea, roofArea, floorArea, volume, uW
 export function estimateHeating(geo, settings, selections, opts) {
   if (!geo) return null;
   const insulation = opts.insulation ?? selections.insulation;
+  // Таазны дулаалгыг тооцоолуурын сонголтоос авна (хуучин төсөлд байхгүй бол гараар сонгосон roofU)
+  const uRoof = CEILING_INSULATION_U[selections.ceilInsulation] ?? opts.roofU;
   const uWall = wallU(selections.extWall, insulation, settings.extT);
   if (uWall == null) return null;
   const uWin = WINDOW_U[selections.windows] ?? 1.8;
@@ -76,7 +93,7 @@ export function estimateHeating(geo, settings, selections, opts) {
     roofArea: geo.sumArea,                        // дээд давхрын тааз
     floorArea: geo.sumArea,                       // доод давхрын шал
     volume: geo.floorArea * settings.wallH,
-    uWall, uWin, uRoof: opts.roofU, ach: opts.ach, tIn: opts.tIn, tOut: opts.tOut, hdd: opts.hdd,
+    uWall, uWin, uRoof, ach: opts.ach, tIn: opts.tIn, tOut: opts.tOut, hdd: opts.hdd,
   });
-  return { ...r, uWall, uWin, insulation, annualCost: r.annualKwh * opts.price, boilerKw: r.Q * 1.2 / 1000 };
+  return { ...r, uWall, uWin, uRoof, insulation, annualCost: r.annualKwh * opts.price, boilerKw: r.Q * 1.2 / 1000 };
 }

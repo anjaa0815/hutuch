@@ -40,18 +40,21 @@
 | `priceStore.js` | `useLivePrices()` — Firestore `config/prices`-оос төвлөрсөн үнэ ачаална (BuildEstimator, QuickPlanner) |
 | `energyEstimate.js` | Халаалтын дулааны баланс: `wallU()` (давхаргаар), `heatBalance()`, `estimateHeating()`. λ/U лавлах утгууд. EngineeringTools-ийн HeatLoss ч үүнийг ашиглана |
 | `AdminPanel.jsx` | Админ хуудас (`view === 'admin'`): зах зээлийн үнэ засах (`config/prices`), Pro хүсэлт/гишүүдийг удирдах (`proRequests`, `proStatus`). `AdminNavButton` толгойд зөвхөн админд харагдана |
+| `AdminNavButton.jsx` | Толгойн 🛠 Админ товч. AdminPanel-ээс тусад нь байгаа нь админ хуудсыг эхний ачаалалд оруулахгүйн тулд |
+| `__tests__/` | Vitest тестүүд (`npm test`): `energyEstimate`, төсвийн мөр бүр RULES-д танигдах, key давхцахгүй |
 | `admin.js` | `ADMIN_EMAILS`, `isAdminUser(u)` — UI-д л ашиглана, жинхэнэ хамгаалалт нь Firestore дүрмийн `isAdmin()` |
 | `EnergyPanel.jsx` | "Төсөв" таб: жилийн халаалтын кВт·ц/₮, зуухны чадлын шалгалт, дулаалгын харьцуулалт (өртөг, хэмнэлт, нөхөгдөх хугацаа) |
 
-Import-ын бүтэц: `App.jsx` → BuildEstimator, QuickPlanner, EngineeringTools, AdviceChat,
-AIPlanGenerator (`AIPlanInline`), ProMembership, AuthPanel, firebase.js.
+Import-ын бүтэц: `App.jsx` → AIPlanGenerator (`AIPlanInline`), ProMembership, AuthPanel, AdminNavButton, firebase.js.
+BuildEstimator, QuickPlanner, EngineeringTools, AdviceChat, AdminPanel-ийг `lazy()`-аар ачаална (code splitting).
+`vite.config.js`-ийн `manualChunks` нь react, firebase, three-г тусдаа chunk болгоно.
+⚠️ App.jsx-ээс эдгээрийг шууд (static) import хийвэл code splitting эвдэрнэ.
 `BuildEstimator.jsx` → ProjectStore, BudgetExplain, HouseTemplates, AIPlanGenerator, miBenchmark,
 ProMembership, dxfExport, FurnitureCatalog.
 
 Бусад: `firestore.rules` (Firestore дүрэм), `functions/` (Firebase Functions, nodejs20),
 `firebase.json` (hosting `dist`, SPA rewrite).
-⚠️ `src/src/` (хуучин App.jsx, AdviceChat.jsx) ба `src/functions/` нь хуучин хуулбар — import
-хийгддэггүй. Эдгээрийг засварлахгүй, андуурч хуулж тавихгүй (дүрэм 2-ыг үз).
+`src/src/`, `src/functions/` хуучин хуулбаруудыг устгасан (2026-11-09). `functions/` нь хуучин Firebase Function юм. Одоо AI нь Vercel дээр ажилладаг.
 
 ## Админ хуудас
 
@@ -71,7 +74,7 @@ ProMembership, dxfExport, FurnitureCatalog.
 
 ## Зах зээлийн үнэ шинэчлэх (код засахгүй)
 
-- Хялбар арга: **Админ хуудас → 💰 Зах зээлийн үнэ** — 104 материал, хайлт, анхдагчаас ялгаа %
+- Хялбар арга: **Админ хуудас → 💰 Зах зээлийн үнэ** — 109 материал, хайлт, анхдагчаас ялгаа %
 - Console-оор: Firestore Console → `config` коллекц → `prices` баримт → талбар нэмэх:
   нэр = материалын key (жишээ `fl_screed1`), төрөл number, утга = ₮
 - `updatedAt` талбар (timestamp эсвэл `"2026-11-08"` string) — "Норм & Үнэ" таб дээр огноо харагдана
@@ -136,7 +139,9 @@ Firebase Console → Firestore → Rules → шинэ match блокийг **н�
 5. **Өөрчлөлт бүрийн дараа бодит рендер тест хийнэ** — зөвхөн build хангалтгүй. Build өнгөрсөн ч
    runtime алдаа (scope, TDZ) сайтыг унагадаг.
 
-6. **`.env`, `functions/.env` git-д оруулахгүй** (нууц түлхүүр).
+6. **`.env`, `functions/.env` git-д оруулахгүй** (нууц түлхүүр). `.env` өмнө нь track хийгдэж байсныг 2026-11-09-нд хассан.
+
+7. **Commit хийхээс өмнө `npm run lint` (0 error), `npm test` хоёуланг нь ажиллуулна.** Шинэ материалын мөр нэмбэл тест нь miBenchmark `RULES`-д танигдаж байгаа эсэхийг шалгана.
 
 ---
 
@@ -148,17 +153,21 @@ Firebase Console → Firestore → Rules → шинэ match блокийг **н�
 ### Хийгдээгүй / дараагийн ажлууд
 
 - [x] `miBenchmark.jsx` холбосон (2026-11-08) — "Төсөв" табын доод хэсэгт RASMI жишиг.
-      `RULES` нь төсвийн бүх 84 мөрийг таньдаг. Шинэ материалын мөр нэмбэл `RULES`-д дүрэм нэмнэ
+      `RULES` нь төсвийн бүх мөрийг таньдаг (109, `npm test` шалгана). Шинэ материалын мөр нэмбэл `RULES`-д дүрэм нэмнэ
       (RASMI-ийн 5 материалд хамаарахгүй бол `mat: null`). Кирилл үгэнд `\b` ажилладаггүй тул `word()` ашиглана.
       Нээлттэй асуулт: "Дотор шавардлага" цементэн (бетон, 30кг/м²) гэж тооцогдож байгаа — гипсэн бол `mat: null`.
-- [ ] Таазны дулаалга тооцоолуурын материалд байхгүй (EnergyPanel-д л сонгоно) — `ceiling`/`roof` системд нэмэх.
+- [x] Таазны дулаалга (2026-11-09) — `ceilInsulation` систем (хөвөн 200/150/100мм, дулаалгагүй), талбай = `sumArea`.
+      U нь `energyEstimate.js`-ийн `CEILING_INSULATION_U`-аас авна. Хуучин төсөлд байхгүй бол EnergyPanel-ийн гараар сонголт ажиллана.
       Шинэ `extWall`/`insulation`/`windows` сонголт нэмбэл `energyEstimate.js`-ийн хүснэгтэд λ/U нэмнэ, үгүй бол халаалтын тооцоо гарахгүй.
-- [ ] Аймгийн төвүүдийн загварын темп., градус·хоног (БНбД 23-01-09) — одоо зөвхөн УБ
+- [~] Аймгийн хэм хоног (2026-11-09): `HDD_ZONES` нь БНбД «Барилгын дулаан хамгаалалт» (2021) 3-р хүснэгтийн бүсчлэлээр хийгдсэн (I 7000 / II 6500 / III 6000 / IV 5000).
+      Увс, Хөвсгөл, Төв эх сурвалжид тодорхой гараагүй тул ороогүй. Гадна загварын темп.-ийг (БНбД 23-01-09) хараахан оруулаагүй.
+      Нээлттэй асуулт: УБ-ын анхдагч 7800 нь нормын I бүсийн 7000-аас зөрүүтэй.
 - [ ] Gemini free tier рүү шилжих (Vercel env солих), Groq-г нөөцөд үлдээх
 - [ ] FB кампанит ажил: постууд бэлэн, дулаан алдагдлын тоо бөглөх, демо видео бичих
 - [ ] Гадна/дотор ханыг материалын тооцоонд ялгаж тусгах (одоо зөвхөн харагдац)
 - [ ] Pro хугацаа (`expiresAt`) автоматжуулах
-- [ ] Bundle хэмжээ 1.5MB — code splitting хийх
+- [x] Code splitting (2026-11-09): эхний ачаалал 448KB → ~258KB (gzip). Firestore SDK (~170KB gzip) хамгийн том хэсэг хэвээр байна.
+- [ ] `aiUsage`-г хаах: `docs/aiUsage-hamgaalalt.md`-ийг үз (Vercel → service account, дараа нь дүрэм)
 
 ## Код бичих хэв маяг
 
