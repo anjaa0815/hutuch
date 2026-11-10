@@ -79,6 +79,17 @@ export function heatBalance({ wallArea, winArea, roofArea, floorArea, volume, uW
 
 /* BuildEstimator-ийн геометр, сонголтоос жилийн халаалт тооцно.
    opts: { insulation?, roofU, ach, tIn, tOut, hdd, price } — insulation-ийг дарж өөр сонголтыг туршиж болно */
+/* EnergyPanel-ийн тохиргооны анхдагч утга (settings.en*) ба estimateHeating-д өгөх opts */
+export const ENERGY_DEFAULTS = {
+  enTin: UB_CLIMATE.tIn, enTout: UB_CLIMATE.tOut, enHdd: UB_CLIMATE.hdd,
+  enAch: 0.5, enPrice: 180, enRoof: "ins",
+};
+export function energyOpts(settings) {
+  const s = { ...ENERGY_DEFAULTS, ...settings };
+  const roofU = (ROOF_U.find((r) => r[0] === s.enRoof) || ROOF_U[0])[2];
+  return { roofU, ach: s.enAch, tIn: s.enTin, tOut: s.enTout, hdd: s.enHdd, price: s.enPrice };
+}
+
 export function estimateHeating(geo, settings, selections, opts) {
   if (!geo) return null;
   const insulation = opts.insulation ?? selections.insulation;

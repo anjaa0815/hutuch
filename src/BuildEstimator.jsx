@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, useEffect } from "react";
+import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import * as THREE from "three";
 import CloudProjects from "./ProjectStore.jsx";
 import { ExplainButton } from "./BudgetExplain.jsx";
@@ -9,6 +9,8 @@ import { downloadDXF } from "./dxfExport.jsx";
 import MaterialBenchmark from "./miBenchmark.jsx";
 import { useLivePrices } from "./priceStore.js";
 import EnergyPanel from "./EnergyPanel.jsx";
+import VariantCompare from "./VariantCompare.jsx";
+import { estimateHeating, energyOpts } from "./energyEstimate.js";
 import { FURNITURE, FURNITURE_CATS, FurnitureIcon, PlacedFurniture } from "./FurnitureCatalog.jsx";
 
 /* ============================================================
@@ -1319,6 +1321,21 @@ export default function BuildEstimator({ onBack, preset }) {
   const grand = subtotal + vat;
   const workDays = settings.crewSize > 0 ? totalHours / (settings.crewSize * 8) : 0;
 
+  /* Хувилбар харьцуулалт: өгсөн материалын сонголтоор төсөв, жилийн халаалтыг тооцно */
+  const calcBudget = useCallback((sel) => {
+    let material = 0, labor = 0;
+    const add = (d) => {
+      const qty = d.qty(geo, settings, norms[d.key]);
+      material += qty * prices[d.key];
+      labor += qty * (laborNorms[d.key] ?? 0) * rateOf(settings, d.cat);
+    };
+    SYSTEMS.forEach((sys) => (sys.options.find((o) => o.id === sel[sys.comp]) || sys.options[0]).items.forEach(add));
+    COMMON_ITEMS.forEach(add);
+    const sub = material + labor + labor * settings.ndshPct / 100 + material * settings.transportPct / 100;
+    return { material, labor, grand: sub * (1 + settings.vatPct / 100) };
+  }, [geo, settings, norms, prices, laborNorms]);
+  const calcHeating = useCallback((sel) => estimateHeating(geo, settings, sel, energyOpts(settings))?.annualCost ?? null, [geo, settings]);
+
   const setS = (patch) => setSettings((s) => ({ ...s, ...patch }));
   const nextY = () => rooms.length ? Math.max(...rooms.flatMap((r) => r.points.map((p) => p.y))) : 0;
   const addRect = () => setRooms((rs) => [...rs, { id: uid(), name: `Өрөө ${rs.length + 1}`, points: rect(0, nextY(), 3, 3), openings: [{ id: uid(), type: "win", edge: 0, t: 0.5, w: 1.2, h: 1.4 }, { id: uid(), type: "door", edge: 2, t: 0.5, w: 0.9, h: 2.1 }] }]);
@@ -1724,6 +1741,9 @@ export default function BuildEstimator({ onBack, preset }) {
                 <Field label="Багийн хүний тоо"><NumInput value={settings.crewSize} step={1} min={1} onChange={(v) => setS({ crewSize: Math.max(1, Math.round(v)) })} /></Field>
               </div>
             </div>
+            {/* Хувилбар харьцуулах (блок vs мод г.м.) */}
+            <VariantCompare systems={SYSTEMS} selections={selections} floorArea={geo.floorArea}
+              calcBudget={calcBudget} calcHeating={calcHeating} onApply={(sel) => setSelections({ ...DEFAULT_SELECTIONS, ...sel })} />
             {/* Жилийн халаалтын зардал + дулаалгын харьцуулалт */}
             <EnergyPanel geo={geo} settings={settings} setS={setS} selections={selections} insulationCosts={insulationCosts}
               onPickInsulation={(id) => setSelections((x) => ({ ...x, insulation: id }))} />

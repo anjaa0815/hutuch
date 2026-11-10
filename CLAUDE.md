@@ -44,6 +44,7 @@
 | `__tests__/` | Vitest тестүүд (`npm test`): `energyEstimate`, төсвийн мөр бүр RULES-д танигдах, key давхцахгүй |
 | `admin.js` | `ADMIN_EMAILS`, `isAdminUser(u)` — UI-д л ашиглана, жинхэнэ хамгаалалт нь Firestore дүрмийн `isAdmin()` |
 | `EnergyPanel.jsx` | "Төсөв" таб: жилийн халаалтын кВт·ц/₮, зуухны чадлын шалгалт, дулаалгын харьцуулалт (өртөг, хэмнэлт, нөхөгдөх хугацаа) |
+| `VariantCompare.jsx` | "Төсөв" таб: материалын сонголтыг 3 хүртэл хувилбар болгон хадгалж (localStorage), нийт төсөв, жилийн халаалт, 10 жилийн нийт өртгийг зэрэгцүүлнэ. Тооцоог `BuildEstimator`-ийн `calcBudget`/`calcHeating`-ээр авна |
 
 Import-ын бүтэц: `App.jsx` → AIPlanGenerator (`AIPlanInline`), ProMembership, AuthPanel, AdminNavButton, firebase.js.
 BuildEstimator, QuickPlanner, EngineeringTools, AdviceChat, AdminPanel-ийг `lazy()`-аар ачаална (code splitting).

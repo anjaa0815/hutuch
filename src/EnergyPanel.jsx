@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { estimateHeating, ROOF_U, UB_CLIMATE, CEILING_INSULATION_U, CEILING_INSULATION_LABEL, HDD_ZONES } from "./energyEstimate.js";
+import { estimateHeating, ROOF_U, ENERGY_DEFAULTS, CEILING_INSULATION_U, CEILING_INSULATION_LABEL, HDD_ZONES } from "./energyEstimate.js";
 
 /* ============================================================
    ХӨТӨЧ — Жилийн халаалтын зардал + дулаалгын харьцуулалт ("Төсөв" таб)
@@ -8,10 +8,6 @@ import { estimateHeating, ROOF_U, UB_CLIMATE, CEILING_INSULATION_U, CEILING_INSU
    өртөг ба хэмнэлтээр нь харьцуулна.
    ============================================================ */
 
-const ENERGY_DEFAULTS = {
-  enTin: UB_CLIMATE.tIn, enTout: UB_CLIMATE.tOut, enHdd: UB_CLIMATE.hdd,
-  enAch: 0.5, enPrice: 180, enRoof: "ins",
-};
 
 const INS_LABELS = { none: "Дулаалгагүй", eps100: "EPS 100мм", rockwool100: "Чулуун хөвөн 100мм", eps150: "EPS 150мм" };
 const PART_LABELS = [["wall", "Хана", "bg-orange-500"], ["win", "Цонх", "bg-sky-500"], ["roof", "Тааз", "bg-amber-400"], ["floor", "Шал", "bg-stone-400"], ["air", "Агаар солилцоо", "bg-emerald-500"]];
