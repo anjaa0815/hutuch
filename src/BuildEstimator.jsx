@@ -25,6 +25,8 @@ import { FURNITURE, FURNITURE_CATS, FurnitureIcon, PlacedFurniture } from "./Fur
 const ROOM_COLORS = ["#bfdbfe", "#bbf7d0", "#fef08a", "#fbcfe8", "#e9d5ff", "#fed7aa", "#a5f3fc", "#e2e8f0"];
 let _id = 10;
 const uid = () => `r${_id++}`;
+/* Хэрэглэгчийн үйлдлээр үүсэх объектын давтагдашгүй id (хадгалсан төсөлтэй давхцахгүй) */
+const stampId = (prefix) => prefix + Date.now();
 
 const rect = (x, y, w, l) => [{ x, y }, { x: x + w, y }, { x: x + w, y: y + l }, { x, y: y + l }];
 const lShape = (x, y) => [{ x, y }, { x: x + 5, y }, { x: x + 5, y: y + 2.5 }, { x: x + 2.5, y: y + 2.5 }, { x: x + 2.5, y: y + 5 }, { x, y: y + 5 }];
@@ -248,6 +250,24 @@ const SYSTEMS = [
     ],
   },
   {
+    /* Дээд давхрын таазны (хучилтын) дулаалга — талбай = нэг давхрын талбай (sumArea).
+       U-утгыг energyEstimate.js-ийн CEILING_INSULATION_U-аас авна */
+    comp: "ceilInsulation", label: "Таазны дулаалга", icon: "🧶", options: [
+      { id: "rw200", name: "Чулуун хөвөн 200мм", items: [
+        { key: "ci_rw200", name: "Чулуун хөвөн 200мм (таазны)", unit: "м²", norm: 1.05, price: 18000, labor: 0.15, cat: "B", hint: "дээд давхрын тааз", qty: (g, s, n) => g.sumArea * n },
+        { key: "ci_vapor", name: "Уур тусгаарлагч хальс (тааз)", unit: "м²", norm: 1.1, price: 4500, labor: 0.05, cat: "A", hint: "", qty: (g, s, n) => g.sumArea * n },
+      ]},
+      { id: "rw150", name: "Чулуун хөвөн 150мм", items: [
+        { key: "ci_rw150", name: "Чулуун хөвөн 150мм (таазны)", unit: "м²", norm: 1.05, price: 13500, labor: 0.13, cat: "B", hint: "дээд давхрын тааз", qty: (g, s, n) => g.sumArea * n },
+        { key: "ci_vapor150", name: "Уур тусгаарлагч хальс (тааз)", unit: "м²", norm: 1.1, price: 4500, labor: 0.05, cat: "A", hint: "", qty: (g, s, n) => g.sumArea * n },
+      ]},
+      { id: "rw100", name: "Чулуун хөвөн 100мм", items: [
+        { key: "ci_rw100", name: "Чулуун хөвөн 100мм (таазны)", unit: "м²", norm: 1.05, price: 9500, labor: 0.1, cat: "B", hint: "дээд давхрын тааз", qty: (g, s, n) => g.sumArea * n },
+      ]},
+      { id: "none", name: "Дулаалгагүй", items: [] },
+    ],
+  },
+  {
     comp: "windows", label: "Цонх", icon: "🪟", options: [
       { id: "pvc", name: "Вакум цонх (PVC)", items: [
         { key: "win_pvc", name: "Вакум цонх, угсралттай", unit: "м²", norm: 1.0, price: 390000, labor: 0, cat: "B", hint: "", qty: (g, s, n) => g.winArea * g.floors * n },
@@ -356,7 +376,7 @@ const COMMON_ITEMS = [
 const DEFAULT_SELECTIONS = {
   foundation: "strip_concrete", extWall: "eps_block", intWall: "gypsum_sys",
   insulation: "eps100", extFinish: "decor_plaster", roof: "metal_sheet",
-  floor: "laminate", ceiling: "gypsum_ceil", windows: "pvc", doors: "wood_door",
+  floor: "laminate", ceiling: "gypsum_ceil", ceilInsulation: "rw200", windows: "pvc", doors: "wood_door",
   electric: "concealed", plumbing: "ppr", heating: "radiator",
 };
 
@@ -485,7 +505,7 @@ function MaterialSelector({ selections, setSelections, lines }) {
 }
 
 /* ---------- 2D SVG план ---------- */
-function PlanCanvas({ rooms, setRooms, selected, setSelected, drawMode, setDrawMode, furniture, setFurniture, wallKind, tool, freeWalls, setFreeWalls }) {
+function PlanCanvas({ rooms, setRooms, selected, setSelected, drawMode, furniture, setFurniture, wallKind, tool, freeWalls, setFreeWalls }) {
   /* Дэлгэцийн хэмжээнээс хамааруулж масштаб — гар утсанд жижиг */
   const isMobile = typeof window !== "undefined" && window.innerWidth < 640;
   const SCALE = isMobile ? 30 : 42, PAD = isMobile ? 1.0 : 1.5;
@@ -558,12 +578,12 @@ function PlanCanvas({ rooms, setRooms, selected, setSelected, drawMode, setDrawM
   const finishWall = (pts = wallPts) => {
     // 2 цэг = чөлөөт хана (өрөө биш) — таславч, хашаа гэх мэт
     if (pts.length === 2) {
-      setFreeWalls((ws) => [...ws, { id: "w" + Date.now(), a: pts[0], b: pts[1], kind: wallKind }]);
+      setFreeWalls((ws) => [...ws, { id: stampId("w"), a: pts[0], b: pts[1], kind: wallKind }]);
       setWallPts([]); setGhost(null);
       return;
     }
     if (pts.length < 3) { setWallPts([]); setGhost(null); return; }
-    const id = "r" + Date.now();
+    const id = stampId("r");
     setRooms((rs) => [...rs, {
       id,
       name: `${wallKind === "ext" ? "Гадна" : "Дотор"} өрөө ${rs.length + 1}`,
@@ -629,8 +649,6 @@ function PlanCanvas({ rooms, setRooms, selected, setSelected, drawMode, setDrawM
     pt = { ...pt, ...orthoLock(wallPts[wallPts.length - 1], pt) };
     setGhost(pt);
   };
-  const undoWallPt = () => setWallPts((w) => w.slice(0, -1));
-  const cancelWall = () => { setWallPts([]); setGhost(null); };
 
   const [selFurn, setSelFurn] = useState(null);
   const startFurnDrag = (e, f) => {

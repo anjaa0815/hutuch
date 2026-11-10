@@ -1,14 +1,23 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import BuildEstimator from './BuildEstimator.jsx';
-import QuickPlanner from './QuickPlanner.jsx';
-import EngineeringTools from './EngineeringTools.jsx';
-import AdviceChat from './AdviceChat.jsx';
-import { signInAnonymously } from 'firebase/auth';
-import { app, auth, db, track } from './firebase.js';
+import React, { useState, useEffect, useMemo, lazy, Suspense } from 'react';
+import { track } from './firebase.js';
 import { AIPlanInline } from './AIPlanGenerator.jsx';
 import { usePro, ProUpgradeModal } from './ProMembership.jsx';
 import { AuthButton } from './AuthPanel.jsx';
-import AdminPanel, { AdminNavButton } from './AdminPanel.jsx';
+import { AdminNavButton } from './AdminNavButton.jsx';
+
+// Том хэсгүүдийг шаардлагатай үед нь ачаална (code splitting) — эхний ачаалал хөнгөн
+const BuildEstimator = lazy(() => import('./BuildEstimator.jsx'));
+const QuickPlanner = lazy(() => import('./QuickPlanner.jsx'));
+const EngineeringTools = lazy(() => import('./EngineeringTools.jsx'));
+const AdviceChat = lazy(() => import('./AdviceChat.jsx'));
+const AdminPanel = lazy(() => import('./AdminPanel.jsx'));
+
+const ViewLoading = () => (
+    <div className="flex items-center justify-center py-24 text-sm text-slate-500 dark:text-slate-400">
+        <span className="mr-3 h-5 w-5 animate-spin rounded-full border-2 border-slate-300 border-t-orange-500" />
+        Ачаалж байна…
+    </div>
+);
 import { 
   Calculator, BrickWall, PaintBucket, Ruler, Info, 
   Menu, X, Grid, Cylinder, Box, Scroll, Coins, 
@@ -26,8 +35,6 @@ import {
   ThumbsUp, MessageCircle, HelpCircle
 } from 'lucide-react';
 
-// Firebase init нь ./firebase.js модульд нэгдсэн (app, auth, db)
-void app; void db;
 
 // ==========================================
 // 1. DATA CONSTANTS & LOGIC
@@ -1840,19 +1847,6 @@ export default function App() {
 
     const [allProducts, setAllProducts] = useState(Object.values(INITIAL_SUPPLIERS).flat());
 
-    // Auth Init
-    useEffect(() => {
-        const initAuth = async () => {
-            // eslint-disable-next-line no-undef
-            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                // Handle custom token if needed
-            } else {
-                if (auth) await signInAnonymously(auth);
-            }
-        };
-        initAuth();
-    }, []);
-
     const toggleDarkMode = () => setDarkMode(!darkMode);
     const handleAddToCart = (item, qty, unit) => { setCart([...cart, { ...item, quantity: qty, unit }]); setIsCartOpen(true); };
     const handleRemoveFromCart = (index) => { const newCart = [...cart]; newCart.splice(index, 1); setCart(newCart); };
@@ -1897,7 +1891,7 @@ export default function App() {
                         <SellerLogin onLogin={handleSellerLogin} />
                     ) : (
                         // USER VIEWS
-                        <>
+                        <Suspense fallback={<ViewLoading />}>
                             {view === 'home' && <HomeView onNavigate={handleNav} onSelectCategory={(id) => { setSelectedCat(id); setView('category'); }} onStartTemplate={handleStartTemplate} onAIPlan={handleAIPlan} />}
                             {view === 'builder' && <QuickPlanner onBack={() => setView('home')} template={initialTemplate} onAdvanced={(p) => { setEstimatorPreset(p); setView('estimator'); }} />}
                             {view === 'advice' && <div><div className="pt-6"><AdviceChat /></div><AdviceForumView onBack={() => setView('home')} /></div>}
@@ -1910,7 +1904,7 @@ export default function App() {
                             {view === 'estimator' && <BuildEstimator onBack={() => setView('home')} preset={estimatorPreset} />}
                             {view === 'tools' && <EngineeringTools onBack={() => setView('home')} />}
                             {view === 'admin' && <AdminPanel onBack={() => setView('home')} />}
-                        </>
+                        </Suspense>
                     )}
                 </main>
 

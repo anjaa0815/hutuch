@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { estimateHeating, ROOF_U, UB_CLIMATE } from "./energyEstimate.js";
+import { estimateHeating, ROOF_U, UB_CLIMATE, CEILING_INSULATION_U, CEILING_INSULATION_LABEL, HDD_ZONES } from "./energyEstimate.js";
 
 /* ============================================================
    ХӨТӨЧ — Жилийн халаалтын зардал + дулаалгын харьцуулалт ("Төсөв" таб)
@@ -43,6 +43,7 @@ function Inp({ label, unit, value, onChange, step = 1 }) {
 export default function EnergyPanel({ geo, settings, setS, selections, insulationCosts = {}, onPickInsulation }) {
   const s = { ...ENERGY_DEFAULTS, ...settings };
   const roofU = (ROOF_U.find((r) => r[0] === s.enRoof) || ROOF_U[0])[2];
+  const ceilKnown = CEILING_INSULATION_U[selections.ceilInsulation] != null;
   const opts = { roofU, ach: s.enAch, tIn: s.enTin, tOut: s.enTout, hdd: s.enHdd, price: s.enPrice };
 
   const cur = useMemo(() => estimateHeating(geo, s, selections, opts),
@@ -76,7 +77,7 @@ export default function EnergyPanel({ geo, settings, setS, selections, insulatio
     <div className="rounded-xl border border-stone-200 bg-white p-4 shadow-sm">
       <h3 className="text-sm font-bold text-stone-800">🔥 Жилийн халаалтын зардал (ойролцоо)</h3>
       <p className="mt-0.5 text-[11px] text-stone-500">
-        Таны план, сонгосон хана, дулаалга, цонхноос тооцоолов. Хананы U = {cur.uWall.toFixed(2)}, цонх U = {cur.uWin.toFixed(1)} Вт/м²K.
+        Таны план, сонгосон хана, дулаалга, цонх, таазнаас тооцоолов. Хананы U = {cur.uWall.toFixed(2)}, цонх U = {cur.uWin.toFixed(1)}, тааз U = {cur.uRoof.toFixed(2)} Вт/м²K.
       </p>
 
       <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
@@ -150,12 +151,29 @@ export default function EnergyPanel({ geo, settings, setS, selections, insulatio
         <summary className="cursor-pointer text-[11px] font-medium text-stone-500">Тооцооны нөхцөл (байршил, үнэ, тааз)</summary>
         <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
           <label className="block">
-            <span className="text-[10px] font-bold uppercase tracking-wide text-stone-400">Таазны дулаалга</span>
-            <select value={s.enRoof} onChange={(e) => setS({ enRoof: e.target.value })}
+            <span className="text-[10px] font-bold uppercase tracking-wide text-stone-400">Байршил (хэм хоног)</span>
+            <select value={HDD_ZONES.find((z) => z.hdd === s.enHdd)?.zone ?? ""} onChange={(e) => { const z = HDD_ZONES.find((x) => x.zone === e.target.value); if (z) setS({ enHdd: z.hdd }); }}
               className="mt-0.5 w-full rounded-md border border-stone-300 px-2 py-1 text-xs focus:border-orange-500 focus:outline-none">
-              {ROOF_U.map(([v, l, u]) => <option key={v} value={v}>{l} (U {u})</option>)}
+              <option value="">Аймаг сонгох…</option>
+              {HDD_ZONES.map((z) => <option key={z.zone} value={z.zone}>{z.zone} бүс ({z.hdd}): {z.places.join(", ")}</option>)}
             </select>
           </label>
+          {ceilKnown ? (
+            <div className="block">
+              <span className="text-[10px] font-bold uppercase tracking-wide text-stone-400">Таазны дулаалга</span>
+              <div className="mt-0.5 rounded-md border border-stone-200 bg-stone-50 px-2 py-1 text-xs text-stone-600">
+                {CEILING_INSULATION_LABEL[selections.ceilInsulation]} (U {CEILING_INSULATION_U[selections.ceilInsulation]}) — материалын сонголтоос
+              </div>
+            </div>
+          ) : (
+            <label className="block">
+              <span className="text-[10px] font-bold uppercase tracking-wide text-stone-400">Таазны дулаалга</span>
+              <select value={s.enRoof} onChange={(e) => setS({ enRoof: e.target.value })}
+                className="mt-0.5 w-full rounded-md border border-stone-300 px-2 py-1 text-xs focus:border-orange-500 focus:outline-none">
+                {ROOF_U.map(([v, l, u]) => <option key={v} value={v}>{l} (U {u})</option>)}
+              </select>
+            </label>
+          )}
           <Inp label="Дотор темп." unit="°C" value={s.enTin} onChange={(v) => setS({ enTin: v })} />
           <Inp label="Гадна загварын темп." unit="°C" value={s.enTout} onChange={(v) => setS({ enTout: v })} />
           <Inp label="Халаалтын градус·хоног" unit="°C·хоног" value={s.enHdd} step={100} onChange={(v) => setS({ enHdd: v })} />
@@ -165,7 +183,7 @@ export default function EnergyPanel({ geo, settings, setS, selections, insulatio
       </details>
 
       <p className="mt-3 border-t border-stone-100 pt-2 text-[10px] leading-snug text-stone-400">
-        Анхдагч нь УБ-ын нөхцөл (−39°C, 7800 °C·хоног). λ, U утгууд нийтлэг материалын ойролцоо утга; нарны дулаан, хүн, тоног
+        Анхдагч нь УБ-ын нөхцөл (−39°C, 7800 °C·хоног). Аймгийн хэм хоногийг БНбД «Барилгын дулаан хамгаалалт»-ын бүсчлэлээс сонгоно; гадна загварын темп.-ийг БНбД 23-01-09-өөс оруулна. λ, U утгууд нийтлэг материалын ойролцоо утга; нарны дулаан, хүн, тоног
         төхөөрөмжийн дулааныг тооцоогүй тул бодит зардал бага зэрэг доогуур байж болно. Зуухны хүчин чадлыг БНбД 23-02-ын аргачлалаар инженер баталгаажуулна.
       </p>
     </div>
