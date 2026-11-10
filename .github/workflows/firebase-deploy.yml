@@ -1,7 +1,6 @@
 # main-д merge/push хийх бүрт hutuch.com (Firebase Hosting) руу автоматаар deploy хийнэ.
 # Нэг удаагийн тохиргоо (GitHub → Settings → Secrets and variables → Actions):
 #   FIREBASE_SERVICE_ACCOUNT  — Firebase service account JSON (бүтнээр нь)
-#   VITE_FIREBASE_CONFIG      — .env доторх утга
 #   VITE_CHAT_API_URL         — .env доторх утга
 name: Firebase Hosting deploy
 
@@ -26,22 +25,9 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - run: npm test
-      # VITE_FIREBASE_CONFIG нь зөв JSON, apiKey/authDomain/projectId-тай эсэхийг шалгана (буруу бол нэвтрэлт эвдэрнэ)
-      - name: Firebase тохиргоог шалгах
-        env:
-          VITE_FIREBASE_CONFIG: ${{ secrets.VITE_FIREBASE_CONFIG }}
-        run: |
-          node -e '
-            const c = JSON.parse(process.env.VITE_FIREBASE_CONFIG || "null");
-            for (const k of ["apiKey", "authDomain", "projectId", "appId"]) {
-              if (!c || typeof c[k] !== "string" || !c[k] || c[k] !== c[k].trim()) throw new Error("VITE_FIREBASE_CONFIG: " + k + " буруу эсвэл байхгүй");
-            }
-            if (c.projectId !== "hutuchcom-39123") throw new Error("VITE_FIREBASE_CONFIG: projectId буруу");
-            console.log("Firebase тохиргоо зөв");'
       # Build алдаа гарвал энд зогсоно — хуучин хувилбар дахин байршихгүй (CLAUDE.md дүрэм 1)
       - run: npm run build
         env:
-          VITE_FIREBASE_CONFIG: ${{ secrets.VITE_FIREBASE_CONFIG }}
           VITE_CHAT_API_URL: ${{ secrets.VITE_CHAT_API_URL }}
       - uses: FirebaseExtended/action-hosting-deploy@v0
         with:

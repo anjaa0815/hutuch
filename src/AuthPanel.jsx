@@ -35,6 +35,7 @@ const ERR_MN = {
   "auth/network-request-failed": "Интернэт холболтоо шалгаад дахин оролдоно уу",
   "auth/user-disabled": "Энэ бүртгэл түр хаагдсан байна",
   "auth/operation-not-allowed": "Энэ нэвтрэх арга идэвхгүй байна (Firebase Console → Authentication)",
+  "auth/api-key-not-valid.-please-pass-a-valid-api-key.": "Firebase түлхүүр буруу байна (сайтын тохиргооны алдаа)",
   "auth/unauthorized-domain": "Энэ домэйноос нэвтрэх зөвшөөрөлгүй (Firebase → Authentication → Authorized domains)",
 };
 const errMsg = (e) => ERR_MN[e?.code] || `Алдаа гарлаа — дахин оролдоно уу (${e?.code || e?.message || "тодорхойгүй"})`;
