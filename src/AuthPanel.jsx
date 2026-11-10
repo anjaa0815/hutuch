@@ -32,8 +32,12 @@ const ERR_MN = {
   "auth/weak-password": "Нууц үг сул байна (6-аас дээш тэмдэгт)",
   "auth/popup-closed-by-user": "Нэвтрэлт цуцлагдлаа",
   "auth/too-many-requests": "Хэт олон оролдлого — түр хүлээгээд дахин оролдоно уу",
+  "auth/network-request-failed": "Интернэт холболтоо шалгаад дахин оролдоно уу",
+  "auth/user-disabled": "Энэ бүртгэл түр хаагдсан байна",
+  "auth/operation-not-allowed": "Энэ нэвтрэх арга идэвхгүй байна (Firebase Console → Authentication)",
+  "auth/unauthorized-domain": "Энэ домэйноос нэвтрэх зөвшөөрөлгүй (Firebase → Authentication → Authorized domains)",
 };
-const errMsg = (e) => ERR_MN[e?.code] || "Алдаа гарлаа — дахин оролдоно уу";
+const errMsg = (e) => ERR_MN[e?.code] || `Алдаа гарлаа — дахин оролдоно уу (${e?.code || e?.message || "тодорхойгүй"})`;
 
 function AuthModal({ onClose }) {
   const [mode, setMode] = useState("login"); // login | register
