@@ -104,6 +104,14 @@ VITE_FIREBASE_CONFIG={"apiKey":"...","projectId":"hutuchcom-39123",...}
 
 ## Deploy урсгал
 
+**Автомат (2026-11-09-ээс):** `main`-д merge/push хийхэд `.github/workflows/firebase-deploy.yml`
+lint → test → build → Firebase Hosting (hutuch.com) руу deploy хийнэ. GitHub Secrets шаардлагатай:
+`FIREBASE_SERVICE_ACCOUNT`, `VITE_FIREBASE_CONFIG`, `VITE_CHAT_API_URL`. Явцыг GitHub → Actions табаас харна.
+Сайтын footer дээрх «Хувилбар: огноо» нь байршсан build-ийн цаг.
+www.hutuch.com нь Vercel-ийн «hutuch» төсөл рүү зааж байсан — Firebase-д шилжүүлж нэгтгэнэ (Vercel Hobby нь арилжааны хэрэглээнд зөвшөөрөгдөхгүй).
+
+Гараар (нөөц арга):
+
 ```powershell
 npm run build                      # ← алдаа гарвал ЦААШ ЯВАХГҮЙ
 firebase deploy --only hosting

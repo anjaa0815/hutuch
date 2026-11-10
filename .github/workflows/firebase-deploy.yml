@@ -1,0 +1,39 @@
+# main-д merge/push хийх бүрт hutuch.com (Firebase Hosting) руу автоматаар deploy хийнэ.
+# Нэг удаагийн тохиргоо (GitHub → Settings → Secrets and variables → Actions):
+#   FIREBASE_SERVICE_ACCOUNT  — Firebase service account JSON (бүтнээр нь)
+#   VITE_FIREBASE_CONFIG      — .env доторх утга
+#   VITE_CHAT_API_URL         — .env доторх утга
+name: Firebase Hosting deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: firebase-deploy
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test
+      # Build алдаа гарвал энд зогсоно — хуучин хувилбар дахин байршихгүй (CLAUDE.md дүрэм 1)
+      - run: npm run build
+        env:
+          VITE_FIREBASE_CONFIG: ${{ secrets.VITE_FIREBASE_CONFIG }}
+          VITE_CHAT_API_URL: ${{ secrets.VITE_CHAT_API_URL }}
+      - uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          projectId: hutuchcom-39123
+          channelId: live

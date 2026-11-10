@@ -401,6 +401,7 @@ const Footer = () => (
                          Hutuch
                     </h3>
                     <p className="text-slate-500 text-sm mt-2">Барилгын ухаалаг туслах.</p>
+                    <p className="text-slate-400 text-[10px] mt-1" title="Сайтад байршуулсан хувилбарын build хийсэн огноо">Хувилбар: {__BUILD_TIME__}</p>
                 </div>
                 <div>
                     <h4 className="font-bold text-slate-900 dark:text-white text-sm mb-3">Холбоо барих</h4>
